@@ -18,7 +18,23 @@
         }
       ],
       "expo-localization",
-      "expo-font",
+      [
+        "expo-font",
+        {
+          "fonts": [
+            "./assets/fonts/Aeonik_Pro/AeonikPro-Regular.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-RegularItalic.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-Bold.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-BoldItalic.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-Light.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-LightItalic.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-Medium.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-MediumItalic.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-Black.otf",
+            "./assets/fonts/Aeonik_Pro/AeonikPro-BlackItalic.otf"
+          ]
+        }
+      ],
       "expo-web-browser"
     ],
     "experiments": {
