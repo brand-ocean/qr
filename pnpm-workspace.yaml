@@ -1,0 +1,5 @@
+ignorePatchFailures: false
+
+onlyBuiltDependencies:
+  - esbuild
+  - unrs-resolver
