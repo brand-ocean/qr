@@ -1,232 +1,289 @@
-import { VStack } from '@nkzw/stack';
 import { BlurView } from 'expo-blur';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
-import { ActivityIndicator, View } from 'react-native';
+import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
 import _YoutubeIframe, {
   type YoutubeIframeRef,
 } from 'react-native-youtube-iframe';
-import { cx } from 'src/lib/cx.tsx';
-import Button from './Button.tsx';
+import { playClickSound } from 'src/lib/sound.ts';
 import colors from './colors.ts';
 import Text from './Text.tsx';
 
 // Type assertion for React 19 compatibility (package uses deprecated React.VFC)
 const YoutubeIframe = _YoutubeIframe as unknown as ComponentType<{
-  ref: React.Ref<YoutubeIframeRef>;
-  height: number;
-  play: boolean;
-  videoId: string;
-  onChangeState: (state: string) => void;
-  onReady: () => void;
-  onError: (error: string) => void;
-  initialPlayerParams: {
-    start: number;
-    end: number;
-    preventFullScreen: boolean;
-    controls: boolean;
-    color: string;
-    iv_load_policy: number;
-    rel: boolean;
-  };
-  webViewProps: {
-    scrollEnabled: boolean;
-    bounces: boolean;
-    allowsLinkPreview?: boolean;
-    onShouldStartLoadWithRequest?: (event: {
-      url: string;
-      title?: string;
-      navigationType: string;
-    }) => boolean;
-  };
   allowWebViewZoom: boolean;
+  height: number;
+  initialPlayerParams: {
+    color: string;
+    controls: boolean;
+    end: number;
+    iv_load_policy: number;
+    modestbranding?: boolean;
+    preventFullScreen: boolean;
+    rel: boolean;
+    start: number;
+  };
+  onChangeState: (state: string) => void;
+  onError: (error: string) => void;
+  onReady: () => void;
+  play: boolean;
+  ref: React.Ref<YoutubeIframeRef>;
+  videoId: string;
+  webViewProps: {
+    allowsLinkPreview?: boolean;
+    bounces: boolean;
+    onShouldStartLoadWithRequest?: (event: {
+      navigationType: string;
+      title?: string;
+      url: string;
+    }) => boolean;
+    scrollEnabled: boolean;
+  };
 }>;
 
 type YouTubePlayerProps = {
-  readonly videoId: string;
-  readonly startTime: number; // in seconds
-  readonly endTime: number; // in seconds
+  readonly endTime: number;
+  readonly onPlayStateChange?: (playing: boolean) => void;
   readonly onReplay?: () => void;
+  readonly startTime: number;
+  readonly videoId: string;
 };
 
 export default function YouTubePlayerComponent({
-  videoId,
-  startTime,
   endTime,
+  onPlayStateChange,
   onReplay,
+  startTime,
+  videoId,
 }: YouTubePlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [showReplay, setShowReplay] = useState(true); // Show play button initially
-  const [hasPlayed, setHasPlayed] = useState(false); // Track if video has been played
   const playerRef = useRef<YoutubeIframeRef>(null);
 
-  const handleStateChange = useCallback((state: string) => {
-    if (state === 'ended' || state === 'paused') {
+  // Reset state when video changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
       setPlaying(false);
-      if (state === 'ended') {
-        setShowReplay(true);
+      setIsReady(false);
+      setError(null);
+      onPlayStateChange?.(false);
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [videoId, onPlayStateChange]);
+
+  const handleStateChange = useCallback(
+    (state: string) => {
+      if (state === 'ended' || state === 'paused') {
+        setPlaying(false);
+        onPlayStateChange?.(false);
+      } else if (state === 'playing') {
+        setPlaying(true);
+        onPlayStateChange?.(true);
       }
-    } else if (state === 'playing') {
-      setPlaying(true);
-      setShowReplay(false);
-      setHasPlayed(true);
-    }
-  }, []);
+    },
+    [onPlayStateChange],
+  );
 
   const handleReady = useCallback(() => {
     setIsReady(true);
-    // Don't autoplay - wait for user to press play button
   }, []);
 
-  const handleError = useCallback((error: string) => {
-    setError(`Video error: ${error}`);
+  const handleError = useCallback((errorMsg: string) => {
+    setError(`Video error: ${errorMsg}`);
     setIsReady(false);
   }, []);
 
   const handleReplay = useCallback(async () => {
-    setShowReplay(false);
+    playClickSound();
     setPlaying(true);
+    onPlayStateChange?.(true);
     if (playerRef.current) {
       await playerRef.current.seekTo(startTime, true);
     }
     onReplay?.();
-  }, [startTime, onReplay]);
+  }, [startTime, onReplay, onPlayStateChange]);
+
+  const handleTogglePlay = useCallback(() => {
+    playClickSound();
+    const newPlayingState = !playing;
+    setPlaying(newPlayingState);
+    onPlayStateChange?.(newPlayingState);
+  }, [playing, onPlayStateChange]);
 
   // Block navigation to external YouTube links (logo, title clicks)
   const handleShouldStartLoad = useCallback(
-    (event: { url: string; title?: string; navigationType: string }) => {
+    (event: { navigationType: string; title?: string; url: string }) => {
       const { url } = event;
-
-      // Allow the initial video embed load
       if (
         url.includes('youtube.com/embed/') ||
         url.includes('www.youtube.com/embed/')
       ) {
         return true;
       }
-
-      // Block any navigation to youtube.com (logo/title clicks)
       if (url.includes('youtube.com') || url.includes('youtu.be')) {
-        console.log(
-          '[YouTubePlayer] Blocked external YouTube navigation:',
-          url,
-        );
-        return false; // Block the navigation
+        return false;
       }
-
-      // Allow other URLs (though there shouldn't be any)
       return true;
     },
     [],
   );
 
-  // Monitor playback time and stop at endTime
-  const handleProgress = useCallback(
-    async (currentTime: number) => {
-      if (currentTime >= endTime && playing) {
-        // Pause the video
-        if (playerRef.current) {
-          // Note: There's no explicit pause method, but setting playing to false should work
-          // The YouTube API will stop at the 'end' parameter we set
-        }
-        setPlaying(false);
-        setShowReplay(true);
-      }
-    },
-    [endTime, playing],
-  );
-
-  // Set up interval to check current time
-  useEffect(() => {
-    if (!playing || !isReady) return;
-
-    const interval = setInterval(async () => {
-      if (playerRef.current) {
-        const currentTime = await playerRef.current.getCurrentTime();
-        await handleProgress(currentTime);
-      }
-    }, 500); // Check every 500ms
-
-    return () => clearInterval(interval);
-  }, [playing, isReady, handleProgress]);
-
   if (error) {
     return (
-      <VStack alignCenter center className="bg-error/10 rounded-2xl p-8">
-        <Text className="text-center text-lg font-semibold text-error">
-          {error}
-        </Text>
-        <Button variant="primary" onPress={handleReplay}>
-          Try Again
-        </Button>
-      </VStack>
+      <View style={styles.errorContainer}>
+        <Text style={styles.errorText}>{error}</Text>
+        <Pressable onPress={handleReplay} style={styles.retryButton}>
+          <Text style={styles.buttonText}>OPNIEUW</Text>
+        </Pressable>
+      </View>
     );
   }
 
   return (
-    <VStack gap={16} className="w-full">
-      <View
-        className={cx('overflow-hidden rounded-3xl bg-videoBg', 'shadow-2xl')}
-      >
+    <View style={styles.container}>
+      <View style={styles.videoWrapper}>
         {!isReady && (
-          <View className="absolute inset-0 z-10 items-center justify-center bg-videoBg">
-            <ActivityIndicator size="large" color={colors.primary} />
-            <Text className="mt-4 text-base text-screen">Loading video...</Text>
+          <View style={styles.loadingOverlay}>
+            <ActivityIndicator color={colors.primaryYellow} size="large" />
+            <Text style={styles.loadingText}>Laden...</Text>
           </View>
         )}
         <YoutubeIframe
-          key={`${videoId}-${startTime}-${endTime}`}
-          ref={playerRef}
+          allowWebViewZoom={false}
           height={220}
-          play={playing}
-          videoId={videoId}
-          onChangeState={handleStateChange}
-          onReady={handleReady}
-          onError={handleError}
           initialPlayerParams={{
-            start: startTime,
+            color: 'white',
+            controls: false,
             end: endTime,
-            preventFullScreen: true, // Disable fullscreen
-            controls: false, // Remove all YouTube controls
-            color: 'white', // Less prominent branding
-            iv_load_policy: 3, // Disable video annotations
-            rel: false, // Don't show related videos at end
+            iv_load_policy: 3,
+            modestbranding: true,
+            preventFullScreen: false,
+            rel: false,
+            start: startTime,
           }}
+          key={`${videoId}-${startTime}-${endTime}`}
+          onChangeState={handleStateChange}
+          onError={handleError}
+          onReady={handleReady}
+          play={playing}
+          ref={playerRef}
+          videoId={videoId}
           webViewProps={{
-            scrollEnabled: false, // Disable scrolling
-            bounces: false, // Disable bounce effect
-            allowsLinkPreview: false, // Disable link previews (iOS)
-            onShouldStartLoadWithRequest: handleShouldStartLoad, // Block external navigation
+            allowsLinkPreview: false,
+            bounces: false,
+            onShouldStartLoadWithRequest: handleShouldStartLoad,
+            scrollEnabled: false,
           }}
-          allowWebViewZoom={false} // Disable zooming
         />
 
-        {/* Top blur overlay - hides video title and channel name */}
-        <BlurView
-          intensity={35}
-          tint="dark"
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 48,
-            zIndex: 20,
-            pointerEvents: 'none',
-            borderTopLeftRadius: 24,
-            borderTopRightRadius: 24,
-          }}
-        />
+        {/* Top blur overlay - hides video title */}
+        <BlurView intensity={35} style={styles.blurOverlay} tint="dark" />
       </View>
 
-      {showReplay && (
-        <Button variant="primary" onPress={handleReplay} className="w-full">
-          <Text className="text-white text-xl">{hasPlayed ? '🔄' : '▶️'}</Text>
-          <Text>{hasPlayed ? 'Replay' : 'Play'}</Text>
-        </Button>
-      )}
-    </VStack>
+      {/* Control Buttons */}
+      <View style={styles.controls}>
+        <Pressable
+          disabled={!isReady}
+          onPress={handleTogglePlay}
+          style={[
+            styles.controlButton,
+            !isReady && styles.controlButtonDisabled,
+          ]}
+        >
+          <Text style={styles.buttonText}>
+            {!isReady ? '...' : playing ? 'PAUSE' : 'PLAY'}
+          </Text>
+        </Pressable>
+
+        <Pressable
+          disabled={!isReady}
+          onPress={handleReplay}
+          style={[
+            styles.controlButton,
+            !isReady && styles.controlButtonDisabled,
+          ]}
+        >
+          <Text style={styles.buttonText}>REPLAY</Text>
+        </Pressable>
+      </View>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  blurOverlay: {
+    borderTopLeftRadius: 16,
+    borderTopRightRadius: 16,
+    height: 48,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
+    zIndex: 20,
+  },
+  buttonText: {
+    color: 'black',
+    fontFamily: 'AeonikFono-Black',
+    fontSize: 18,
+  },
+  container: {
+    gap: 15,
+    width: '100%',
+  },
+  controlButton: {
+    alignItems: 'center',
+    backgroundColor: '#FFD700',
+    borderColor: 'black',
+    borderWidth: 4,
+    flex: 1,
+    paddingVertical: 15,
+  },
+  controlButtonDisabled: {
+    opacity: 0.5,
+  },
+  controls: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  errorContainer: {
+    alignItems: 'center',
+    backgroundColor: 'rgba(255, 0, 0, 0.1)',
+    borderRadius: 16,
+    gap: 16,
+    padding: 32,
+  },
+  errorText: {
+    color: colors.error,
+    fontSize: 16,
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    backgroundColor: '#000',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
+  loadingText: {
+    color: 'white',
+    fontSize: 16,
+    marginTop: 16,
+  },
+  retryButton: {
+    backgroundColor: '#FFD700',
+    borderColor: 'black',
+    borderWidth: 3,
+    paddingHorizontal: 24,
+    paddingVertical: 12,
+  },
+  videoWrapper: {
+    backgroundColor: '#000',
+    borderColor: 'white',
+    borderRadius: 20,
+    borderWidth: 4,
+    overflow: 'hidden',
+    width: '100%',
+  },
+});

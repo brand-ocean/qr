@@ -13,18 +13,18 @@ cssInterop(LinearGradient, {
 });
 
 type CardHeaderProps = {
-  readonly title: string;
   readonly icon?: ReactNode;
   readonly subtitle?: string;
+  readonly title: string;
 };
 
-export default function CardHeader({ title, icon, subtitle }: CardHeaderProps) {
+export default function CardHeader({ icon, subtitle, title }: CardHeaderProps) {
   return (
     <LinearGradient
-      colors={[colors.primary, colors.secondary]}
-      start={{ x: 0, y: 0 }}
-      end={{ x: 1, y: 0 }}
       className={cx('rounded-3xl px-6 py-4', 'shadow-lg')}
+      colors={[colors.greenLight, colors.blueLight]}
+      end={{ x: 1, y: 0 }}
+      start={{ x: 0, y: 0 }}
     >
       <VStack gap={12}>
         {icon && <View className="h-8 w-8">{icon}</View>}

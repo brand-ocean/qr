@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a modern React Native & Expo mobile application template built with the New Architecture. The project uses Expo Router for file-based routing, NativeWind/Tailwind for styling, and fbtee for internationalization.
+This is a modern React Native & Expo mobile application (iOS & Android only, no web) built with the New Architecture. The project uses Expo Router for file-based routing, NativeWind/Tailwind for styling, and fbtee for internationalization.
 
 **Key Technologies:**
 
@@ -47,9 +47,6 @@ pnpm ios
 # Run Android
 pnpm android
 
-# Run on web
-pnpm web
-
 # Start with dev client
 pnpm start
 ```
@@ -77,10 +74,9 @@ src/
 ├── app/              # Expo Router file-based routing
 │   ├── _layout.tsx   # Root layout with LocaleContext, ViewerContext, GestureHandler
 │   ├── login.tsx     # Login screen
-│   ├── (app)/        # Authenticated app routes
-│   │   ├── _layout.tsx   # Auth guard (redirects to /login if not authenticated)
-│   │   └── (tabs)/       # Tab-based navigation
-│   └── +html.tsx     # Web HTML template
+│   └── (app)/        # Authenticated app routes
+│       ├── _layout.tsx   # Auth guard (redirects to /login if not authenticated)
+│       └── (tabs)/       # Tab-based navigation
 ├── ui/               # Reusable UI components
 │   ├── colors.ts     # Color definitions (imported by Tailwind)
 │   ├── Text.tsx      # Custom Text component

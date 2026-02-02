@@ -8,15 +8,29 @@ export const TextClassContext = createContext<string | undefined>(undefined);
 
 // Map Tailwind font weight classes to AeonikPro font families
 function getFontFamily(className?: string): string {
-  if (!className) return 'AeonikPro-Regular';
+  if (!className) {
+    return 'AeonikPro-Regular';
+  }
 
   // Check for font weight classes
-  if (className.includes('font-black')) return 'AeonikPro-Black';
-  if (className.includes('font-bold')) return 'AeonikPro-Bold';
-  if (className.includes('font-semibold')) return 'AeonikPro-Bold';
-  if (className.includes('font-medium')) return 'AeonikPro-Medium';
-  if (className.includes('font-light')) return 'AeonikPro-Light';
-  if (className.includes('font-thin')) return 'AeonikPro-Thin';
+  if (className.includes('font-black')) {
+    return 'AeonikPro-Black';
+  }
+  if (className.includes('font-bold')) {
+    return 'AeonikPro-Bold';
+  }
+  if (className.includes('font-semibold')) {
+    return 'AeonikPro-Bold';
+  }
+  if (className.includes('font-medium')) {
+    return 'AeonikPro-Medium';
+  }
+  if (className.includes('font-light')) {
+    return 'AeonikPro-Light';
+  }
+  if (className.includes('font-thin')) {
+    return 'AeonikPro-Thin';
+  }
 
   return 'AeonikPro-Regular';
 }

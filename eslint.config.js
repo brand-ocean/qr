@@ -27,6 +27,18 @@ export default [
     },
   },
   {
+    files: ['src/app/_layout.tsx'],
+    rules: {
+      '@typescript-eslint/no-require-imports': 0,
+    },
+  },
+  {
+    files: ['src/ui/SunburstBackground.tsx'],
+    rules: {
+      'react-hooks/refs': 0,
+    },
+  },
+  {
     plugins: {
       '@nkzw/fbtee': fbtee,
     },

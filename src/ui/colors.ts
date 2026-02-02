@@ -1,24 +1,47 @@
+// VIRALS Meme Editie - Color System
 const colors = {
-  // Primary game colors
-  primary: '#FF6B35', // Vibrant orange - main accent
-  secondary: '#4ECDC4', // Playful teal - secondary accent
-  accent: '#FFE66D', // Bright yellow - highlights
+  // Sunburst Colors - Greens
+  greenDark: '#016A2A',
+  greenLight: '#22B331',
+
+  // Sunburst Colors - Reds
+  redDark: '#7E131C',
+  redLight: '#EC001B',
+
+  // Sunburst Colors - Yellows
+  yellowDark: '#FF8C00',
+  yellowLight: '#FFF200',
+
+  // Sunburst Colors - Blues
+  blueDark: '#1B5096',
+  blueLight: '#00B1E0',
+
+  // Sunburst Colors - Purples
+  purpleDark: '#6D297F',
+  purpleLight: '#B52D87',
+
+  // Primary UI Colors
+  primary: '#007AFF', // Blue button
+  primaryGreen: '#4CD964', // Success green
+  primaryYellow: '#FFD700', // Gold/Yellow accent
 
   // Backgrounds
-  screen: '#FFF9F0', // Warm off-white
-  cardBg: '#FFFFFF', // Pure white for cards
-  subtle: '#F4F4F4', // Light gray
+  cardBg: '#FFFFFF',
+  screen: '#FFFFFF',
+  videoBg: '#000000',
 
   // Text
-  text: '#2D3142', // Dark blue-gray
-  textLight: '#6B7280', // Medium gray
+  text: '#000000',
+  textLight: '#333333',
+  textWhite: '#FFFFFF',
 
   // Interactive
-  success: '#4CAF50', // Green for replay/success
-  error: '#EF4444', // Red for errors
+  error: '#FF3B30',
+  success: '#4CD964',
 
-  // Video UI
-  videoBg: '#1A1A1A', // Dark background for video viewing
+  // Borders
+  border: '#000000',
+  white: '#FFFFFF',
 };
 
 export type ColorName = keyof typeof colors;

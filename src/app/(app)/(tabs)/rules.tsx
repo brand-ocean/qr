@@ -1,7 +1,7 @@
 import { VStack } from '@nkzw/stack';
 import { Stack as ExpoStack } from 'expo-router';
 import { fbs } from 'fbtee';
-import { ScrollView } from 'react-native';
+import { ScrollView } from 'react-native-gesture-handler';
 import Text from 'src/ui/Text.tsx';
 
 export default function RulesScreen() {
@@ -11,7 +11,7 @@ export default function RulesScreen() {
         options={{ title: String(fbs('Rules', 'Rules screen title')) }}
       />
       <ScrollView className="flex-1 bg-screen">
-        <VStack gap={32} className="p-6">
+        <VStack className="p-6" gap={32}>
           {/* How to Play */}
           <VStack gap={12}>
             <Text className="text-2xl font-bold text-text">

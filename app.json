@@ -1,14 +1,9 @@
 {
   "expo": {
-    "name": "NKZW App",
-    "slug": "nkzw-app",
+    "name": "Virals Game",
+    "slug": "viralsgame",
     "version": "1.0.0",
-    "scheme": "nkzw-app",
-    "web": {
-      "bundler": "metro",
-      "output": "static",
-      "favicon": "./assets/favicon.png"
-    },
+    "scheme": "viralsgame",
     "plugins": [
       "expo-router",
       [
@@ -22,20 +17,27 @@
         "expo-font",
         {
           "fonts": [
-            "./assets/fonts/Aeonik_Pro/AeonikPro-Regular.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-RegularItalic.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-Bold.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-BoldItalic.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-Light.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-LightItalic.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-Medium.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-MediumItalic.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-Black.otf",
-            "./assets/fonts/Aeonik_Pro/AeonikPro-BlackItalic.otf"
+            "./assets/fonts/Aeonik_Fono/AeonikFono-Regular.otf",
+            "./assets/fonts/Aeonik_Fono/AeonikFono-Bold.otf",
+            "./assets/fonts/Aeonik_Fono/AeonikFono-Black.otf",
+            "./assets/fonts/Aeonik_Fono/AeonikFono-Medium.otf",
+            "./assets/fonts/Aeonik_Fono/AeonikFono-Light.otf"
           ]
         }
       ],
-      "expo-web-browser"
+      "expo-web-browser",
+      [
+        "expo-av",
+        {
+          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+        }
+      ],
+      [
+        "react-native-vision-camera",
+        {
+          "enableCodeScanner": true
+        }
+      ]
     ],
     "experiments": {
       "reactCanary": true,
@@ -52,29 +54,37 @@
     "splash": {
       "image": "./assets/splash.png",
       "resizeMode": "contain",
-      "backgroundColor": "#ffffff"
+      "backgroundColor": "#22B331"
     },
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "app.nkzw.www",
+      "bundleIdentifier": "nl.viralsgame.app",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to scan QR codes on game cards.",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to record audio for video."
       }
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
-        "backgroundColor": "#ffffff"
+        "backgroundColor": "#22B331"
       },
-      "package": "app.nkzw.www",
-      "predictiveBackGestureEnabled": true
+      "package": "nl.viralsgame.app",
+      "predictiveBackGestureEnabled": true,
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.MODIFY_AUDIO_SETTINGS"
+      ]
     },
     "newArchEnabled": true,
     "extra": {
       "router": {
         "origin": false
       }
-    }
+    },
+    "owner": "brandocean"
   }
 }
