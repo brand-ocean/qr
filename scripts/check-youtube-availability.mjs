@@ -31,6 +31,8 @@ function parseArgs(args) {
   const options = {
     allowlistPath: DEFAULT_ALLOWLIST_PATH,
     concurrency: DEFAULT_CONCURRENCY,
+    reportJsonPath: null,
+    reportMarkdownPath: null,
     videosPath: DEFAULT_VIDEOS_PATH,
   };
 
@@ -53,9 +55,19 @@ function parseArgs(args) {
       options.concurrency = value;
       continue;
     }
+    if (arg.startsWith('--report-json=')) {
+      options.reportJsonPath = path.resolve(arg.slice('--report-json='.length));
+      continue;
+    }
+    if (arg.startsWith('--report-md=')) {
+      options.reportMarkdownPath = path.resolve(
+        arg.slice('--report-md='.length),
+      );
+      continue;
+    }
 
     throw new Error(
-      `Unknown argument "${arg}". Supported: --videos=, --allowlist=, --concurrency=`,
+      `Unknown argument "${arg}". Supported: --videos=, --allowlist=, --concurrency=, --report-json=, --report-md=`,
     );
   }
 
@@ -262,31 +274,186 @@ function createCheckKey(cardId, videoId) {
   return `${cardId}|${videoId}`;
 }
 
-async function main() {
-  const options = parseArgs(process.argv.slice(2));
+function escapeMarkdownCell(value) {
+  return String(value ?? '')
+    .replaceAll('|', String.raw`\|`)
+    .replaceAll('\n', ' ')
+    .trim();
+}
 
-  const videosFileContent = await fs.readFile(options.videosPath, 'utf8');
-  const cards = extractVideoCards(videosFileContent);
+function formatFailureMessage(result) {
+  return result.message ?? `HTTP ${result.status}`;
+}
 
-  if (cards.length === 0) {
-    throw new Error('No cards found in videos.ts');
+function createMarkdownTable(headers, rows) {
+  const headerLine = `| ${headers.map(escapeMarkdownCell).join(' | ')} |`;
+  const separatorLine = `| ${headers.map(() => '---').join(' | ')} |`;
+  const bodyLines = rows.map((row) => {
+    return `| ${row.map(escapeMarkdownCell).join(' | ')} |`;
+  });
+  return [headerLine, separatorLine, ...bodyLines].join('\n');
+}
+
+function createMarkdownReport(report) {
+  let lines = [
+    '# YouTube Availability Report',
+    '',
+    `Generated at: ${report.generatedAt}`,
+    `Videos file: ${report.videosFile}`,
+    `Allowlist file: ${report.allowlistFile}`,
+    `Concurrency: ${report.concurrency}`,
+    '',
+    '## Summary',
+    '',
+    createMarkdownTable(
+      [
+        'Total checked',
+        'Passed',
+        'Allowlisted failures',
+        'Blocking failures',
+        'Stale allowlist entries',
+      ],
+      [
+        [
+          report.summary.totalChecked,
+          report.summary.passed,
+          report.summary.allowlistedFailures,
+          report.summary.blockingFailures,
+          report.summary.staleAllowlistEntries,
+        ],
+      ],
+    ),
+    '',
+  ];
+
+  if (report.allowlistedFailures.length > 0) {
+    lines = lines.concat([
+      '## Allowlisted Failures',
+      '',
+      createMarkdownTable(
+        ['Card ID', 'Video ID', 'Status', 'Message', 'Reason'],
+        report.allowlistedFailures.map((item) => {
+          return [
+            item.cardId,
+            item.videoId,
+            item.status,
+            item.message,
+            item.reason,
+          ];
+        }),
+      ),
+      '',
+    ]);
   }
 
-  const allowlistContent = await fs.readFile(options.allowlistPath, 'utf8');
-  const allowlistByKey = parseAllowlist(allowlistContent);
+  if (report.blockingFailures.length > 0) {
+    lines = lines.concat([
+      '## Blocking Failures',
+      '',
+      createMarkdownTable(
+        ['Card ID', 'Video ID', 'Status', 'Message'],
+        report.blockingFailures.map((item) => {
+          return [item.cardId, item.videoId, item.status, item.message];
+        }),
+      ),
+      '',
+    ]);
+  }
 
+  if (report.staleAllowlistEntries.length > 0) {
+    lines = lines.concat([
+      '## Stale Allowlist Entries',
+      '',
+      createMarkdownTable(
+        ['Card ID', 'Video ID', 'Reason', 'Added On', 'Expires On'],
+        report.staleAllowlistEntries.map((item) => {
+          return [
+            item.cardId,
+            item.videoId,
+            item.reason,
+            item.addedOn ?? '',
+            item.expiresOn ?? '',
+          ];
+        }),
+      ),
+      '',
+    ]);
+  }
+
+  if (
+    report.allowlistedFailures.length === 0 &&
+    report.blockingFailures.length === 0 &&
+    report.staleAllowlistEntries.length === 0
+  ) {
+    lines = lines.concat([
+      'No failures or stale allowlist entries detected.',
+      '',
+    ]);
+  }
+
+  return lines.join('\n');
+}
+
+async function writeOptionalFile(filePath, content) {
+  if (!filePath) {
+    return;
+  }
+
+  await fs.mkdir(path.dirname(filePath), { recursive: true });
+  await fs.writeFile(filePath, content, 'utf8');
+}
+
+function printConsoleReport(report) {
   writeLine('YouTube availability check (oEmbed)');
-  writeLine(`Videos file : ${options.videosPath}`);
-  writeLine(`Allowlist   : ${options.allowlistPath}`);
-  writeLine(`Concurrency : ${options.concurrency}`);
+  writeLine(`Videos file : ${report.videosFile}`);
+  writeLine(`Allowlist   : ${report.allowlistFile}`);
+  writeLine(`Concurrency : ${report.concurrency}`);
   writeLine('');
 
-  const checkResults = await runWithConcurrency(
-    cards,
-    options.concurrency,
-    checkVideoAvailability,
-  );
+  writeLine('Summary');
+  writeLine(`- Total cards checked : ${report.summary.totalChecked}`);
+  writeLine(`- Passed              : ${report.summary.passed}`);
+  writeLine(`- Allowlisted failures: ${report.summary.allowlistedFailures}`);
+  writeLine(`- Blocking failures   : ${report.summary.blockingFailures}`);
+  writeLine('');
 
+  if (report.allowlistedFailures.length > 0) {
+    writeLine('Allowlisted failures');
+    for (const item of report.allowlistedFailures) {
+      writeLine(
+        `- ${item.cardId} (${item.videoId}) -> ${item.message} [${item.reason}]`,
+      );
+    }
+    writeLine('');
+  }
+
+  if (report.staleAllowlistEntries.length > 0) {
+    writeLine('Stale allowlist entries (not found in videos.ts)');
+    for (const item of report.staleAllowlistEntries) {
+      writeLine(`- ${item.cardId} (${item.videoId})`);
+    }
+    writeLine('');
+  }
+
+  if (report.blockingFailures.length > 0) {
+    writeErrorLine('Blocking failures');
+    for (const item of report.blockingFailures) {
+      writeErrorLine(`- ${item.cardId} (${item.videoId}) -> ${item.message}`);
+    }
+    return;
+  }
+
+  writeLine('Result: PASS');
+}
+
+function createReport({
+  allowlistByKey,
+  allowlistPath,
+  cards,
+  checkResults,
+  concurrency,
+  videosPath,
+}) {
   const passed = [];
   const allowlistedFailures = [];
   const blockingFailures = [];
@@ -304,11 +471,24 @@ async function main() {
     const checkKey = createCheckKey(result.cardId, result.videoId);
     const allowlistEntry = allowlistByKey.get(checkKey);
     if (allowlistEntry) {
-      allowlistedFailures.push({ ...result, allowlistEntry });
+      allowlistedFailures.push({
+        attempts: result.attempts,
+        cardId: result.cardId,
+        message: formatFailureMessage(result),
+        reason: allowlistEntry.reason,
+        status: result.status,
+        videoId: result.videoId,
+      });
       continue;
     }
 
-    blockingFailures.push(result);
+    blockingFailures.push({
+      attempts: result.attempts,
+      cardId: result.cardId,
+      message: formatFailureMessage(result),
+      status: result.status,
+      videoId: result.videoId,
+    });
   }
 
   const staleAllowlistEntries = [];
@@ -318,46 +498,74 @@ async function main() {
     }
   }
 
-  writeLine('Summary');
-  writeLine(`- Total cards checked : ${cards.length}`);
-  writeLine(`- Passed              : ${passed.length}`);
-  writeLine(`- Allowlisted failures: ${allowlistedFailures.length}`);
-  writeLine(`- Blocking failures   : ${blockingFailures.length}`);
-  writeLine('');
+  staleAllowlistEntries.sort((a, b) => a.cardId.localeCompare(b.cardId));
+  allowlistedFailures.sort((a, b) => a.cardId.localeCompare(b.cardId));
+  blockingFailures.sort((a, b) => a.cardId.localeCompare(b.cardId));
 
-  if (allowlistedFailures.length > 0) {
-    writeLine('Allowlisted failures');
-    for (const result of allowlistedFailures) {
-      writeLine(
-        `- ${result.cardId} (${result.videoId}) -> ${result.message ?? `HTTP ${result.status}`} [${result.allowlistEntry.reason}]`,
-      );
-    }
-    writeLine('');
+  return {
+    allowlistedFailures,
+    allowlistFile: allowlistPath,
+    blockingFailures,
+    concurrency,
+    generatedAt: new Date().toISOString(),
+    staleAllowlistEntries,
+    summary: {
+      allowlistedFailures: allowlistedFailures.length,
+      blockingFailures: blockingFailures.length,
+      passed: passed.length,
+      staleAllowlistEntries: staleAllowlistEntries.length,
+      totalChecked: cards.length,
+    },
+    videosFile: videosPath,
+  };
+}
+
+async function main() {
+  const options = parseArgs(process.argv.slice(2));
+
+  const videosFileContent = await fs.readFile(options.videosPath, 'utf8');
+  const cards = extractVideoCards(videosFileContent);
+
+  if (cards.length === 0) {
+    throw new Error('No cards found in videos.ts');
   }
 
-  if (staleAllowlistEntries.length > 0) {
-    writeLine('Stale allowlist entries (not found in videos.ts)');
-    for (const entry of staleAllowlistEntries) {
-      writeLine(`- ${entry.cardId} (${entry.videoId})`);
-    }
-    writeLine('');
-  }
+  const allowlistContent = await fs.readFile(options.allowlistPath, 'utf8');
+  const allowlistByKey = parseAllowlist(allowlistContent);
 
-  if (blockingFailures.length > 0) {
-    writeErrorLine('Blocking failures');
-    for (const result of blockingFailures) {
-      writeErrorLine(
-        `- ${result.cardId} (${result.videoId}) -> ${result.message ?? `HTTP ${result.status}`}`,
-      );
-    }
-    process.exit(1);
-  }
+  const checkResults = await runWithConcurrency(
+    cards,
+    options.concurrency,
+    checkVideoAvailability,
+  );
 
-  writeLine('Result: PASS');
+  const report = createReport({
+    allowlistByKey,
+    allowlistPath: options.allowlistPath,
+    cards,
+    checkResults,
+    concurrency: options.concurrency,
+    videosPath: options.videosPath,
+  });
+
+  const markdownReport = createMarkdownReport(report);
+  const jsonReport = `${JSON.stringify(report, null, 2)}\n`;
+
+  await Promise.all([
+    writeOptionalFile(options.reportJsonPath, jsonReport),
+    writeOptionalFile(options.reportMarkdownPath, markdownReport),
+  ]);
+
+  printConsoleReport(report);
+
+  return report.summary.blockingFailures > 0 ? 1 : 0;
 }
 
 try {
-  await main();
+  const exitCode = await main();
+  if (exitCode !== 0) {
+    process.exit(exitCode);
+  }
 } catch (error) {
   const message = error instanceof Error ? error.message : String(error);
   writeErrorLine(`videos:check failed: ${message}`);

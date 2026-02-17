@@ -137,6 +137,12 @@ adb shell am start -a android.intent.action.VIEW -c android.intent.category.BROW
 - Allowlist: `config/videos-check-allowlist.json`
 - Scope: YouTube-only (`videoId` + YouTube oEmbed), no Bunny/local handling.
 - CI workflow: `.github/workflows/videos-check.yml`
+- Workflow schedule: daily at `07:00 UTC` (`0 7 * * *`)
+- Workflow report output:
+  - Step summary in GitHub Actions UI (`$GITHUB_STEP_SUMMARY`)
+  - Artifact `videos-check-report` containing:
+    - `artifacts/videos-check-report.md`
+    - `artifacts/videos-check-report.json`
 
 GitHub Actions runbook:
 
@@ -150,6 +156,8 @@ gh run watch <run-id> --repo brand-ocean/qr
 Troubleshooting:
 
 - If `pnpm videos:check` fails, review blocking cards in output.
+- To generate local reports:
+  - `pnpm videos:check --report-md=artifacts/videos-check-report.md --report-json=artifacts/videos-check-report.json`
 - If a known broken card must temporarily pass CI, add an explicit allowlist
   entry with `cardId`, `videoId`, `reason`, and `addedOn`.
 - Allowlist matching is strict on `cardId` + `videoId`; stale/mismatched

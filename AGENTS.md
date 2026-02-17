@@ -108,7 +108,13 @@ Physical device check:
 - Script: `scripts/check-youtube-availability.mjs`
 - Allowlist: `config/videos-check-allowlist.json`
 - CI workflow: `.github/workflows/videos-check.yml`
+- Schedule: daily at `07:00 UTC` (`0 7 * * *`) + push/PR/manual dispatch
 - Scope: YouTube-only. Bunny/local videos are intentionally out of scope.
+- Report output:
+  - GitHub Actions Step Summary (markdown report)
+  - Artifact `videos-check-report` with:
+    - `artifacts/videos-check-report.md`
+    - `artifacts/videos-check-report.json`
 
 Allowlist rules:
 
@@ -123,4 +129,10 @@ gh workflow list --repo brand-ocean/qr
 gh workflow run videos-check.yml --repo brand-ocean/qr --ref main
 gh run list --repo brand-ocean/qr
 gh run watch <run-id> --repo brand-ocean/qr
+```
+
+Local report generation:
+
+```bash
+pnpm videos:check --report-md=artifacts/videos-check-report.md --report-json=artifacts/videos-check-report.json
 ```

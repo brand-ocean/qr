@@ -5,6 +5,8 @@ on:
   push:
     branches:
       - main
+  schedule:
+    - cron: '0 7 * * *'
   workflow_dispatch:
 
 jobs:
@@ -31,4 +33,30 @@ jobs:
         run: pnpm install --frozen-lockfile
 
       - name: Run YouTube availability check
-        run: pnpm videos:check
+        id: videos_check
+        continue-on-error: true
+        run: |
+          pnpm videos:check \
+            --report-json=artifacts/videos-check-report.json \
+            --report-md=artifacts/videos-check-report.md
+
+      - name: Publish report to workflow summary
+        if: always()
+        run: |
+          if [ -f artifacts/videos-check-report.md ]; then
+            cat artifacts/videos-check-report.md >> "$GITHUB_STEP_SUMMARY"
+          else
+            echo "No markdown report generated." >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload report artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: videos-check-report
+          path: artifacts/
+          if-no-files-found: error
+
+      - name: Enforce gate result
+        if: steps.videos_check.outcome != 'success'
+        run: exit 1
