@@ -17,6 +17,7 @@
     "start": "expo start --dev-client",
     "test": "NODE_OPTIONS='--no-experimental-detect-module' npm-run-all --parallel tsc:check vitest:run lint lint:format",
     "tsc:check": "tsc",
+    "videos:check": "node scripts/check-youtube-availability.mjs",
     "videos:generate": "node scripts/generate-videos-from-csv.mjs",
     "vitest:run": "vitest run"
   },

@@ -36,6 +36,7 @@ pnpm vitest:run
 pnpm lint
 pnpm lint:format
 pnpm format
+pnpm videos:check
 ```
 
 ### Data Pipeline
@@ -91,6 +92,7 @@ pnpm videos:generate
 
 ```bash
 pnpm tsc:check
+pnpm videos:check
 ```
 
 ### Dataset Spot Check
@@ -128,13 +130,30 @@ adb shell am start -a android.intent.action.VIEW -c android.intent.category.BROW
   - `app.json` (`ios.associatedDomains`, `android.intentFilters`)
   - `docs/cloudflare-universal-links.md`
 
-## Pending TODO (Not Yet Implemented)
+### YouTube Availability Gate
 
-- Add required CI gate `videos:check` for YouTube availability.
-- Strategy:
-  - query YouTube oEmbed per `videoId`
-  - fail CI for unavailable non-allowlisted cards
-  - keep it as separate CI job (not part of `lint`)
+- Script: `scripts/check-youtube-availability.mjs`
+- Script command: `pnpm videos:check`
+- Allowlist: `config/videos-check-allowlist.json`
+- Scope: YouTube-only (`videoId` + YouTube oEmbed), no Bunny/local handling.
+- CI workflow: `.github/workflows/videos-check.yml`
+
+GitHub Actions runbook:
+
+```bash
+gh workflow list --repo brand-ocean/qr
+gh workflow run videos-check.yml --repo brand-ocean/qr --ref main
+gh run list --repo brand-ocean/qr
+gh run watch <run-id> --repo brand-ocean/qr
+```
+
+Troubleshooting:
+
+- If `pnpm videos:check` fails, review blocking cards in output.
+- If a known broken card must temporarily pass CI, add an explicit allowlist
+  entry with `cardId`, `videoId`, `reason`, and `addedOn`.
+- Allowlist matching is strict on `cardId` + `videoId`; stale/mismatched
+  entries do not suppress failures.
 
 ## Important Notes
 

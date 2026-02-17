@@ -52,6 +52,7 @@ pnpm videos:generate
 
 ```bash
 pnpm tsc:check
+pnpm videos:check
 ```
 
 ### Optional Checks
@@ -101,8 +102,25 @@ Physical device check:
 
 - Open `https://viralsgame.nl/kaart0001` and confirm app route landing.
 
-## Known Pending Work (TODO)
+## YouTube Availability Gate
 
-- Add required CI YouTube availability check (`videos:check`) as a separate job.
-- Proposed strategy: YouTube oEmbed probes per `videoId`, fail on unavailable IDs, with allowlist support.
-- Status: planned only; not implemented yet.
+- Command: `pnpm videos:check`
+- Script: `scripts/check-youtube-availability.mjs`
+- Allowlist: `config/videos-check-allowlist.json`
+- CI workflow: `.github/workflows/videos-check.yml`
+- Scope: YouTube-only. Bunny/local videos are intentionally out of scope.
+
+Allowlist rules:
+
+- Match key is strict: `cardId` + `videoId`.
+- Each allowlist entry must include: `cardId`, `videoId`, `reason`, `addedOn`.
+- Keep allowlist minimal and remove stale entries when source data changes.
+
+Workflow commands:
+
+```bash
+gh workflow list --repo brand-ocean/qr
+gh workflow run videos-check.yml --repo brand-ocean/qr --ref main
+gh run list --repo brand-ocean/qr
+gh run watch <run-id> --repo brand-ocean/qr
+```
