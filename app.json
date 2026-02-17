@@ -60,6 +60,10 @@
     "ios": {
       "supportsTablet": true,
       "bundleIdentifier": "nl.viralsgame.app",
+      "associatedDomains": [
+        "applinks:viralsgame.nl",
+        "applinks:www.viralsgame.nl"
+      ],
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to scan QR codes on game cards.",
@@ -77,12 +81,34 @@
         "android.permission.CAMERA",
         "android.permission.RECORD_AUDIO",
         "android.permission.MODIFY_AUDIO_SETTINGS"
+      ],
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "autoVerify": true,
+          "data": [
+            {
+              "scheme": "https",
+              "host": "viralsgame.nl",
+              "pathPrefix": "/kaart"
+            },
+            {
+              "scheme": "https",
+              "host": "www.viralsgame.nl",
+              "pathPrefix": "/kaart"
+            }
+          ],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
       ]
     },
     "newArchEnabled": true,
     "extra": {
       "router": {
         "origin": false
+      },
+      "eas": {
+        "projectId": "5603e7e0-6488-48ca-8dc8-09765adbc530"
       }
     },
     "owner": "brandocean"

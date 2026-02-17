@@ -1,5 +1,5 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getVideoById, type VideoCard } from 'src/data/videos.ts';
@@ -11,21 +11,28 @@ import YouTubePlayer from 'src/ui/YouTubePlayer.tsx';
 export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const [video, setVideo] = useState<VideoCard | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
+  const [acknowledgedWarningForId, setAcknowledgedWarningForId] = useState<
+    string | null
+  >(null);
 
-  useEffect(() => {
-    if (id) {
-      const foundVideo = getVideoById(id);
-      if (foundVideo && foundVideo.videoId !== video?.videoId) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
-        setVideo(foundVideo);
-      } else if (!foundVideo) {
-        setError(`Video "${id}" niet gevonden`);
-      }
+  const normalizedId = useMemo(() => {
+    return id?.toLowerCase() ?? '';
+  }, [id]);
+
+  const video = useMemo<VideoCard | null>(() => {
+    if (!normalizedId) {
+      return null;
     }
-  }, [id, video]);
+    return getVideoById(normalizedId);
+  }, [normalizedId]);
+
+  const error = useMemo(() => {
+    if (!normalizedId || video) {
+      return null;
+    }
+    return `Video "${normalizedId}" niet gevonden`;
+  }, [normalizedId, video]);
 
   const goBack = () => {
     router.back();
@@ -69,35 +76,59 @@ export default function VideoScreen() {
     );
   }
 
+  const shouldShowWarning =
+    video.contentWarning && acknowledgedWarningForId !== video.id;
+
   return (
     <View style={styles.container}>
       <SunburstBackground paused={isVideoPlaying} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Text style={styles.videoName}>
-            {video.emoji} {video.name}
-          </Text>
+          <Text style={styles.videoName}>{video.quote}</Text>
         </View>
         <View style={styles.cardContainer}>
           <View style={styles.card}>
-            <YouTubePlayer
-              endTime={video.endTime}
-              onPlayStateChange={setIsVideoPlaying}
-              startTime={video.startTime}
-              videoId={video.videoId}
-            />
-            <ViralButton
-              onPress={() => router.push('/(app)/(tabs)/scanner' as Href)}
-              style={styles.fullWidthButton}
-              title="SCAN NIEUWE KAART"
-              variant="primary"
-            />
-            <ViralButton
-              onPress={goBack}
-              style={styles.fullWidthButton}
-              title="TERUG"
-              variant="outline"
-            />
+            {shouldShowWarning ? (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningTitle}>Let op</Text>
+                <Text style={styles.warningText}>
+                  Deze kaart bevat mogelijk schokkende of beledigende inhoud.
+                </Text>
+                <ViralButton
+                  onPress={() => setAcknowledgedWarningForId(video.id)}
+                  style={styles.fullWidthButton}
+                  title="DOORGAAN"
+                  variant="primary"
+                />
+                <ViralButton
+                  onPress={goBack}
+                  style={styles.fullWidthButton}
+                  title="TERUG"
+                  variant="outline"
+                />
+              </View>
+            ) : (
+              <>
+                <YouTubePlayer
+                  endTime={video.endTime}
+                  onPlayStateChange={setIsVideoPlaying}
+                  startTime={video.startTime}
+                  videoId={video.videoId}
+                />
+                <ViralButton
+                  onPress={() => router.push('/(app)/(tabs)/scanner' as Href)}
+                  style={styles.fullWidthButton}
+                  title="SCAN NIEUWE KAART"
+                  variant="primary"
+                />
+                <ViralButton
+                  onPress={goBack}
+                  style={styles.fullWidthButton}
+                  title="TERUG"
+                  variant="outline"
+                />
+              </>
+            )}
           </View>
         </View>
       </SafeAreaView>
@@ -183,5 +214,22 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { height: 4, width: 4 },
     textShadowRadius: 0,
+  },
+  warningContainer: {
+    alignItems: 'center',
+    gap: 16,
+    paddingVertical: 12,
+  },
+  warningText: {
+    color: 'black',
+    fontFamily: 'AeonikFono-Bold',
+    fontSize: 18,
+    lineHeight: 24,
+    textAlign: 'center',
+  },
+  warningTitle: {
+    color: 'black',
+    fontFamily: 'AeonikFono-Black',
+    fontSize: 30,
   },
 });

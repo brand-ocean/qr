@@ -1,7 +1,14 @@
 import { BlurView } from 'expo-blur';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
-import { ActivityIndicator, Pressable, StyleSheet, View } from 'react-native';
+import type { StyleProp, ViewStyle } from 'react-native';
+import {
+  ActivityIndicator,
+  Platform,
+  Pressable,
+  StyleSheet,
+  View,
+} from 'react-native';
 import _YoutubeIframe, {
   type YoutubeIframeRef,
 } from 'react-native-youtube-iframe';
@@ -12,11 +19,12 @@ import Text from './Text.tsx';
 // Type assertion for React 19 compatibility (package uses deprecated React.VFC)
 const YoutubeIframe = _YoutubeIframe as unknown as ComponentType<{
   allowWebViewZoom: boolean;
+  forceAndroidAutoplay?: boolean;
   height: number;
   initialPlayerParams: {
     color: string;
     controls: boolean;
-    end: number;
+    end?: number;
     iv_load_policy: number;
     modestbranding?: boolean;
     preventFullScreen: boolean;
@@ -31,14 +39,17 @@ const YoutubeIframe = _YoutubeIframe as unknown as ComponentType<{
   videoId: string;
   webViewProps: {
     allowsLinkPreview?: boolean;
+    androidLayerType?: 'none' | 'software' | 'hardware';
     bounces: boolean;
     onShouldStartLoadWithRequest?: (event: {
       navigationType: string;
       title?: string;
       url: string;
     }) => boolean;
+    renderToHardwareTextureAndroid?: boolean;
     scrollEnabled: boolean;
   };
+  webViewStyle?: StyleProp<ViewStyle>;
 }>;
 
 type YouTubePlayerProps = {
@@ -73,16 +84,32 @@ export default function YouTubePlayerComponent({
   }, [videoId, onPlayStateChange]);
 
   const handleStateChange = useCallback(
-    (state: string) => {
-      if (state === 'ended' || state === 'paused') {
+    async (state: string) => {
+      if (state === 'ended') {
+        if (endTime > 0 && playerRef.current) {
+          await playerRef.current.seekTo(startTime, true);
+          setPlaying(true);
+          onPlayStateChange?.(true);
+          return;
+        }
+
         setPlaying(false);
         onPlayStateChange?.(false);
-      } else if (state === 'playing') {
+        return;
+      }
+
+      if (state === 'paused') {
+        setPlaying(false);
+        onPlayStateChange?.(false);
+        return;
+      }
+
+      if (state === 'playing') {
         setPlaying(true);
         onPlayStateChange?.(true);
       }
     },
-    [onPlayStateChange],
+    [endTime, onPlayStateChange, startTime],
   );
 
   const handleReady = useCallback(() => {
@@ -140,6 +167,8 @@ export default function YouTubePlayerComponent({
     );
   }
 
+  const playerEndTime = endTime > 0 ? endTime : undefined;
+
   return (
     <View style={styles.container}>
       <View style={styles.videoWrapper}>
@@ -151,11 +180,12 @@ export default function YouTubePlayerComponent({
         )}
         <YoutubeIframe
           allowWebViewZoom={false}
+          forceAndroidAutoplay={true}
           height={220}
           initialPlayerParams={{
             color: 'white',
             controls: false,
-            end: endTime,
+            end: playerEndTime,
             iv_load_policy: 3,
             modestbranding: true,
             preventFullScreen: false,
@@ -171,10 +201,14 @@ export default function YouTubePlayerComponent({
           videoId={videoId}
           webViewProps={{
             allowsLinkPreview: false,
+            androidLayerType:
+              Platform.OS === 'android' ? 'hardware' : undefined,
             bounces: false,
             onShouldStartLoadWithRequest: handleShouldStartLoad,
+            renderToHardwareTextureAndroid: true,
             scrollEnabled: false,
           }}
+          webViewStyle={{ opacity: 0.99 }}
         />
 
         {/* Top blur overlay - hides video title */}

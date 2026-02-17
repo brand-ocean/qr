@@ -35,6 +35,12 @@ export default function TabLayout() {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="[cardId]"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   );
 }

@@ -1,92 +1,64 @@
 import { VStack } from '@nkzw/stack';
 import { Stack as ExpoStack } from 'expo-router';
-import { fbs } from 'fbtee';
 import { ScrollView } from 'react-native-gesture-handler';
 import Text from 'src/ui/Text.tsx';
 
 export default function RulesScreen() {
   return (
     <>
-      <ExpoStack.Screen
-        options={{ title: String(fbs('Rules', 'Rules screen title')) }}
-      />
+      <ExpoStack.Screen options={{ title: 'Regels' }} />
       <ScrollView className="flex-1 bg-screen">
         <VStack className="p-6" gap={32}>
-          {/* How to Play */}
+          {/* Hoe te spelen */}
           <VStack gap={12}>
-            <Text className="text-2xl font-bold text-text">
-              <fbt desc="How to play heading">How to Play</fbt>
-            </Text>
+            <Text className="text-2xl font-bold text-text">Hoe te spelen</Text>
             <Text className="text-base leading-6 text-textLight">
-              <fbt desc="How to play description">
-                Scan the QR code on your physical game card to watch its unique
-                video clip. Each card has a specific time segment that reveals
-                part of the story!
-              </fbt>
+              Scan de QR-code op je fysieke spelkaart om de unieke videoclip te
+              bekijken. Elke kaart heeft een specifiek tijdssegment dat een deel
+              van het verhaal onthult!
             </Text>
           </VStack>
 
-          {/* Objective */}
+          {/* Doel */}
           <VStack gap={12}>
-            <Text className="text-2xl font-bold text-text">
-              <fbt desc="Game objective heading">Objective</fbt>
-            </Text>
+            <Text className="text-2xl font-bold text-text">Doel</Text>
             <Text className="text-base leading-6 text-textLight">
-              <fbt desc="Game objective description">
-                Collect cards and watch their video segments to piece together
-                the complete narrative. Each card unlocks a different part of
-                the adventure!
-              </fbt>
+              Verzamel kaarten en bekijk hun videosegmenten om het complete
+              verhaal samen te stellen. Elke kaart ontgrendelt een ander deel
+              van het avontuur!
             </Text>
           </VStack>
 
-          {/* Video Controls */}
+          {/* Video bediening */}
           <VStack gap={12}>
             <Text className="text-2xl font-bold text-text">
-              <fbt desc="Video controls heading">Video Controls</fbt>
+              Video bediening
             </Text>
             <VStack gap={8}>
               <Text className="text-base leading-6 text-textLight">
-                •{' '}
-                <fbt desc="Rule auto play">
-                  Videos play automatically when you scan a card
-                </fbt>
+                • Video&apos;s spelen automatisch af wanneer je een kaart scant
               </Text>
               <Text className="text-base leading-6 text-textLight">
-                •{' '}
-                <fbt desc="Rule time limit">
-                  Each video stops at its designated end time
-                </fbt>
+                • Elke video stopt op de aangewezen eindtijd
               </Text>
               <Text className="text-base leading-6 text-textLight">
-                •{' '}
-                <fbt desc="Rule replay">
-                  Press the Replay button to watch again
-                </fbt>
+                • Druk op de knop Opnieuw afspelen om nogmaals te kijken
               </Text>
             </VStack>
           </VStack>
 
           {/* Tips */}
           <VStack gap={12}>
-            <Text className="text-2xl font-bold text-text">
-              <fbt desc="Tips heading">Tips</fbt>
-            </Text>
+            <Text className="text-2xl font-bold text-text">Tips</Text>
             <VStack gap={8}>
               <Text className="text-base leading-6 text-textLight">
-                •{' '}
-                <fbt desc="Tip 1">
-                  Pay attention to details in each video clip
-                </fbt>
+                • Let op details in elke videoclip
               </Text>
               <Text className="text-base leading-6 text-textLight">
-                • <fbt desc="Tip 2">Cards can be played in any order</fbt>
+                • Kaarten kunnen in elke volgorde gespeeld worden
               </Text>
               <Text className="text-base leading-6 text-textLight">
-                •{' '}
-                <fbt desc="Tip 3">
-                  Watch clips multiple times to catch everything
-                </fbt>
+                • Bekijk clips meerdere keren om alles te zien
               </Text>
             </VStack>
           </VStack>

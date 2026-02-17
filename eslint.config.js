@@ -1,9 +1,7 @@
 import nkzw from '@nkzw/eslint-config';
-import fbtee from '@nkzw/eslint-plugin-fbtee';
 
 export default [
   ...nkzw,
-  fbtee.configs.strict,
   {
     ignores: [
       '__generated__',
@@ -39,11 +37,7 @@ export default [
     },
   },
   {
-    plugins: {
-      '@nkzw/fbtee': fbtee,
-    },
     rules: {
-      '@nkzw/fbtee/no-untranslated-strings': 0,
       '@typescript-eslint/array-type': [2, { default: 'generic' }],
       '@typescript-eslint/no-restricted-imports': [
         2,

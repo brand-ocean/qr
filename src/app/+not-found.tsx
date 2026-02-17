@@ -1,24 +1,15 @@
 import { Link, Stack } from 'expo-router';
-import { fbs } from 'fbtee';
 import { View } from 'react-native';
 import Text from 'src/ui/Text.tsx';
 
 export default function NotFoundScreen() {
   return (
     <>
-      <Stack.Screen
-        options={{ title: String(fbs('Oops!', 'Not found screen title')) }}
-      />
+      <Stack.Screen options={{ title: 'Oeps!' }} />
       <View className="flex-1 items-center justify-center p-5">
-        <Text className="text-lg font-bold">
-          <fbt desc="Screen not found title">
-            This screen doesn&apos;t exist.
-          </fbt>
-        </Text>
+        <Text className="text-lg font-bold">Dit scherm bestaat niet.</Text>
         <Link className="mt-4 pt-4" href="/">
-          <Text className="text-base text-primary">
-            <fbt desc="Go back link">Go to home screen!</fbt>
-          </Text>
+          <Text className="text-base text-primary">Ga naar beginscherm!</Text>
         </Link>
       </View>
     </>

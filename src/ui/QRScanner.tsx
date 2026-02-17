@@ -16,6 +16,25 @@ type QRScannerProps = {
   readonly onVideoFound: (videoId: string) => void;
 };
 
+function parseCardIdFromScannedValue(value: string): string | null {
+  const trimmedValue = value.trim();
+
+  const matchers = [
+    /^https?:\/\/(?:www\.)?viralsgame\.nl\/(kaart\d{4})(?:[#/?].*)?$/i,
+    /^viralsgame:\/\/(kaart\d{4})(?:[#/?].*)?$/i,
+    /^(?:www\.)?viralsgame\.nl\/(kaart\d{4})(?:[#/?].*)?$/i,
+  ];
+
+  for (const matcher of matchers) {
+    const match = trimmedValue.match(matcher);
+    if (match?.[1]) {
+      return match[1].toLowerCase();
+    }
+  }
+
+  return null;
+}
+
 export default function QRScanner({ onClose, onVideoFound }: QRScannerProps) {
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
@@ -32,20 +51,19 @@ export default function QRScanner({ onClose, onVideoFound }: QRScannerProps) {
         return;
       }
 
-      // Parse virals-app://video/xxx URL
-      const match = code.value.match(/^virals-app:\/\/video\/(.+)$/);
-      if (match) {
-        const videoId = match[1];
-        const video = getVideoById(videoId);
+      const videoId = parseCardIdFromScannedValue(code.value);
+      if (!videoId) {
+        return;
+      }
 
-        if (video) {
-          isProcessing.current = true;
-          onVideoFound(videoId);
-          // Reset after navigation
-          setTimeout(() => {
-            isProcessing.current = false;
-          }, 1000);
-        }
+      const video = getVideoById(videoId);
+      if (video) {
+        isProcessing.current = true;
+        onVideoFound(videoId);
+        // Reset after navigation
+        setTimeout(() => {
+          isProcessing.current = false;
+        }, 1000);
       }
     },
     [onVideoFound],
