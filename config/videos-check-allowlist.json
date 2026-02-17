@@ -1,23 +1,4 @@
 {
   "version": 1,
-  "entries": [
-    {
-      "cardId": "kaart0036",
-      "videoId": "x2sIBt1ve6Y",
-      "reason": "oEmbed returned HTTP 401 during baseline validation",
-      "addedOn": "2026-02-17"
-    },
-    {
-      "cardId": "kaart0126",
-      "videoId": "sSvHPuOz_w0",
-      "reason": "oEmbed returned HTTP 401 during baseline validation",
-      "addedOn": "2026-02-17"
-    },
-    {
-      "cardId": "kaart0213",
-      "videoId": "yFUqNxeisOY",
-      "reason": "oEmbed returned HTTP 404 during baseline validation",
-      "addedOn": "2026-02-17"
-    }
-  ]
+  "entries": []
 }

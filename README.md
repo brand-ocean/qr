@@ -12,7 +12,6 @@ You have to make a lot of decisions and install tons of packages every time you 
 - Expo 54 & React Native 0.81 with the New Architecture.
 - [Expo Router](https://docs.expo.dev/router/introduction/)
 - [Nativewind](https://www.nativewind.dev/) & [Tailwind CSS](https://tailwindcss.com/)
-- [fbtee](https://github.com/nkzw-tech/fbtee) for i18n.
 - [TypeScript](https://www.typescriptlang.org)
 - [React Compiler](https://react.dev/learn/react-compiler)
 - [`@gorhom/bottom-sheet`](https://github.com/gorhom/react-native-bottom-sheet), [Legend List](https://github.com/LegendApp/legend-list), [`react-native-svg`](https://github.com/software-mansion/react-native-svg) (+ `react-native-svg-transformer`).
