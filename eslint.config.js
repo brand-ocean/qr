@@ -76,6 +76,19 @@ export default [
           ],
         },
       ],
+      'import-x/no-unresolved': [
+        2,
+        {
+          ignore: [
+            String.raw`\.gif$`,
+            String.raw`\.jpeg$`,
+            String.raw`\.jpg$`,
+            String.raw`\.png$`,
+            String.raw`\.svg$`,
+            String.raw`\.webp$`,
+          ],
+        },
+      ],
     },
     settings: {
       'import-x/resolver': {

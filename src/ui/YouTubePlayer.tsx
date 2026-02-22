@@ -1,7 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
-import type { StyleProp, ViewStyle } from 'react-native';
+import type { LayoutChangeEvent, StyleProp, ViewStyle } from 'react-native';
 import {
   ActivityIndicator,
   Platform,
@@ -41,6 +41,7 @@ const YoutubeIframe = _YoutubeIframe as unknown as ComponentType<{
     allowsLinkPreview?: boolean;
     androidLayerType?: 'none' | 'software' | 'hardware';
     bounces: boolean;
+    mediaPlaybackRequiresUserAction?: boolean;
     onShouldStartLoadWithRequest?: (event: {
       navigationType: string;
       title?: string;
@@ -70,7 +71,12 @@ export default function YouTubePlayerComponent({
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [containerWidth, setContainerWidth] = useState(0);
   const playerRef = useRef<YoutubeIframeRef>(null);
+
+  const handleLayout = useCallback((event: LayoutChangeEvent) => {
+    setContainerWidth(event.nativeEvent.layout.width);
+  }, []);
 
   // Reset state when video changes
   useEffect(() => {
@@ -168,10 +174,11 @@ export default function YouTubePlayerComponent({
   }
 
   const playerEndTime = endTime > 0 ? endTime : undefined;
+  const videoHeight = containerWidth > 0 ? containerWidth * (9 / 16) : 220;
 
   return (
     <View style={styles.container}>
-      <View style={styles.videoWrapper}>
+      <View onLayout={handleLayout} style={styles.videoWrapper}>
         {!isReady && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator color={colors.primaryYellow} size="large" />
@@ -181,7 +188,7 @@ export default function YouTubePlayerComponent({
         <YoutubeIframe
           allowWebViewZoom={false}
           forceAndroidAutoplay={true}
-          height={220}
+          height={videoHeight}
           initialPlayerParams={{
             color: 'white',
             controls: false,
@@ -204,6 +211,8 @@ export default function YouTubePlayerComponent({
             androidLayerType:
               Platform.OS === 'android' ? 'hardware' : undefined,
             bounces: false,
+            mediaPlaybackRequiresUserAction:
+              Platform.OS === 'android' ? false : undefined,
             onShouldStartLoadWithRequest: handleShouldStartLoad,
             renderToHardwareTextureAndroid: true,
             scrollEnabled: false,

@@ -1,12 +1,13 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getVideoById, type VideoCard } from 'src/data/videos.ts';
 import SunburstBackground from 'src/ui/SunburstBackground.tsx';
 import Text from 'src/ui/Text.tsx';
 import ViralButton from 'src/ui/ViralButton.tsx';
 import YouTubePlayer from 'src/ui/YouTubePlayer.tsx';
+import viralLogo from '../../../../../../assets/images/virals-logo.png';
 
 export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -84,7 +85,7 @@ export default function VideoScreen() {
       <SunburstBackground paused={isVideoPlaying} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Text style={styles.videoName}>{video.quote}</Text>
+          <Image resizeMode="contain" source={viralLogo} style={styles.logo} />
         </View>
         <View style={styles.cardContainer}>
           <View style={styles.card}>
@@ -202,18 +203,13 @@ const styles = StyleSheet.create({
     textShadowOffset: { height: 3, width: 3 },
     textShadowRadius: 0,
   },
+  logo: {
+    height: 80,
+    width: '80%',
+  },
   safeArea: {
     flex: 1,
     zIndex: 1,
-  },
-  videoName: {
-    color: 'white',
-    fontFamily: 'AeonikFono-Black',
-    fontSize: 36,
-    textAlign: 'center',
-    textShadowColor: '#000',
-    textShadowOffset: { height: 4, width: 4 },
-    textShadowRadius: 0,
   },
   warningContainer: {
     alignItems: 'center',
