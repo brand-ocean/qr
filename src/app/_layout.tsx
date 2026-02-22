@@ -2,6 +2,7 @@ import 'global.css';
 import { VStack } from '@nkzw/stack';
 import { useFonts } from 'expo-font';
 import { Slot, SplashScreen } from 'expo-router';
+import { lockAsync, OrientationLock } from 'expo-screen-orientation';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 
@@ -20,6 +21,10 @@ export default function RootLayout() {
     'AeonikFono-Medium': require('../../assets/fonts/Aeonik_Fono/AeonikFono-Medium.otf'),
     'AeonikFono-Regular': require('../../assets/fonts/Aeonik_Fono/AeonikFono-Regular.otf'),
   });
+
+  useEffect(() => {
+    lockAsync(OrientationLock.PORTRAIT_UP);
+  }, []);
 
   useEffect(() => {
     if (fontsLoaded || fontError) {

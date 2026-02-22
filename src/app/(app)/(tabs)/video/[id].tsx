@@ -1,5 +1,10 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
-import { useMemo, useState } from 'react';
+import {
+  lockAsync,
+  OrientationLock,
+  unlockAsync,
+} from 'expo-screen-orientation';
+import { useEffect, useMemo, useState } from 'react';
 import { Image, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getVideoById, type VideoCard } from 'src/data/videos.ts';
@@ -12,13 +17,22 @@ import viralLogo from '../../../../../assets/images/virals-logo.png';
 const LOGO_ASPECT_RATIO = 1279 / 771;
 
 export default function VideoScreen() {
-  const { width: screenWidth } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
+  const screenWidth = width;
+  const isLandscape = width > height;
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [acknowledgedWarningForId, setAcknowledgedWarningForId] = useState<
     string | null
   >(null);
+
+  useEffect(() => {
+    unlockAsync();
+    return () => {
+      lockAsync(OrientationLock.PORTRAIT_UP);
+    };
+  }, []);
 
   const normalizedId = useMemo(() => {
     return id?.toLowerCase() ?? '';
@@ -83,6 +97,24 @@ export default function VideoScreen() {
   const shouldShowWarning =
     video.contentWarning && acknowledgedWarningForId !== video.id;
 
+  if (isLandscape && !shouldShowWarning) {
+    const videoContainerWidth = Math.min(width, height * (16 / 9));
+    return (
+      <View style={styles.landscapeContainer}>
+        <View
+          style={[styles.landscapeVideoWrapper, { width: videoContainerWidth }]}
+        >
+          <YouTubePlayer
+            endTime={video.endTime}
+            onPlayStateChange={setIsVideoPlaying}
+            startTime={video.startTime}
+            videoId={video.videoId}
+          />
+        </View>
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
       <SunburstBackground paused={isVideoPlaying} />
@@ -126,6 +158,9 @@ export default function VideoScreen() {
                   startTime={video.startTime}
                   videoId={video.videoId}
                 />
+                <Text style={styles.rotateHint}>
+                  ↻ Draai voor groter scherm
+                </Text>
                 <ViralButton
                   onPress={() => router.push('/(app)/(tabs)/scanner' as Href)}
                   style={styles.fullWidthButton}
@@ -200,6 +235,15 @@ const styles = StyleSheet.create({
     marginTop: 80,
     transform: [{ rotate: '-2deg' }],
   },
+  landscapeContainer: {
+    alignItems: 'center',
+    backgroundColor: 'black',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  landscapeVideoWrapper: {
+    aspectRatio: 16 / 9,
+  },
   loadingCard: {
     alignItems: 'center',
     flex: 1,
@@ -215,6 +259,12 @@ const styles = StyleSheet.create({
   },
   logo: {
     width: '80%',
+  },
+  rotateHint: {
+    color: '#888',
+    fontFamily: 'AeonikFono-Regular',
+    fontSize: 13,
+    textAlign: 'center',
   },
   safeArea: {
     flex: 1,

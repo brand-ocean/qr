@@ -36,7 +36,8 @@
         {
           "enableCodeScanner": true
         }
-      ]
+      ],
+      ["expo-screen-orientation", { "initialOrientation": "DEFAULT" }]
     ],
     "experiments": {
       "reactCanary": true,
@@ -47,7 +48,7 @@
       "tsconfigPaths": true,
       "typedRoutes": true
     },
-    "orientation": "portrait",
+    "orientation": "default",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "splash": {
