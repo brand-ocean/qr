@@ -94,8 +94,10 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
   },
   cardContainer: {
-    paddingBottom: 20,
-    paddingHorizontal: 20,
+    bottom: 20,
+    left: 20,
+    position: 'absolute',
+    right: 20,
   },
   container: {
     flex: 1,

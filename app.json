@@ -37,7 +37,15 @@
           "enableCodeScanner": true
         }
       ],
-      ["expo-screen-orientation", { "initialOrientation": "DEFAULT" }]
+      [
+        "expo-screen-orientation",
+        {
+          "initialOrientation": "DEFAULT"
+        }
+      ],
+      "expo-asset",
+      "expo-audio",
+      "expo-video"
     ],
     "experiments": {
       "reactCanary": true,
