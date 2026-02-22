@@ -7,7 +7,7 @@ import SunburstBackground from 'src/ui/SunburstBackground.tsx';
 import Text from 'src/ui/Text.tsx';
 import ViralButton from 'src/ui/ViralButton.tsx';
 import YouTubePlayer from 'src/ui/YouTubePlayer.tsx';
-import viralLogo from '../../../../../../assets/images/virals-logo.png';
+import viralLogo from '../../../../../assets/images/virals-logo.png';
 
 export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
