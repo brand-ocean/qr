@@ -98,9 +98,9 @@ export default function VideoScreen() {
     video.contentWarning && acknowledgedWarningForId !== video.id;
 
   // In landscape the card is 90% of screen height; compute the video width
-  // that exactly fills the card's inner height at 16:9.
-  // cardInnerHeight = height*0.9 - 2*borderWidth(5) - 2*innerPadding(20)
-  const landscapeVideoWidth = (height * 0.9 - 50) * (16 / 9);
+  // that fits the card's inner height at 16:9, leaving room for the hint
+  // text below: cardInnerHeight - border(10) - padding(40) - gap(16) - text(18)
+  const landscapeVideoWidth = (height * 0.9 - 84) * (16 / 9);
 
   return (
     <View style={styles.container}>
@@ -145,20 +145,25 @@ export default function VideoScreen() {
                 />
               </View>
             ) : isLandscape ? (
-              <View
-                style={[
-                  styles.landscapeVideoContainer,
-                  { width: landscapeVideoWidth },
-                ]}
-              >
-                <YouTubePlayer
-                  endTime={video.endTime}
-                  hideControls={true}
-                  onPlayStateChange={setIsVideoPlaying}
-                  startTime={video.startTime}
-                  videoId={video.videoId}
-                />
-              </View>
+              <>
+                <View
+                  style={[
+                    styles.landscapeVideoContainer,
+                    { width: landscapeVideoWidth },
+                  ]}
+                >
+                  <YouTubePlayer
+                    endTime={video.endTime}
+                    hideControls={true}
+                    onPlayStateChange={setIsVideoPlaying}
+                    startTime={video.startTime}
+                    videoId={video.videoId}
+                  />
+                </View>
+                <Text style={styles.rotateHint}>
+                  ↺ Draai terug voor controls
+                </Text>
+              </>
             ) : (
               <>
                 <YouTubePlayer
