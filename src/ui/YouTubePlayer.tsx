@@ -54,6 +54,7 @@ const YoutubeIframe = _YoutubeIframe as unknown as ComponentType<{
 
 type YouTubePlayerProps = {
   readonly endTime: number;
+  readonly hideControls?: boolean;
   readonly onPlayStateChange?: (playing: boolean) => void;
   readonly onReplay?: () => void;
   readonly startTime: number;
@@ -62,6 +63,7 @@ type YouTubePlayerProps = {
 
 export default function YouTubePlayerComponent({
   endTime,
+  hideControls = false,
   onPlayStateChange,
   onReplay,
   startTime,
@@ -225,31 +227,33 @@ export default function YouTubePlayerComponent({
       </View>
 
       {/* Control Buttons */}
-      <View style={styles.controls}>
-        <Pressable
-          disabled={!isReady}
-          onPress={handleTogglePlay}
-          style={[
-            styles.controlButton,
-            !isReady && styles.controlButtonDisabled,
-          ]}
-        >
-          <Text style={styles.buttonText}>
-            {!isReady ? '...' : playing ? 'PAUSE' : 'PLAY'}
-          </Text>
-        </Pressable>
+      {!hideControls && (
+        <View style={styles.controls}>
+          <Pressable
+            disabled={!isReady}
+            onPress={handleTogglePlay}
+            style={[
+              styles.controlButton,
+              !isReady && styles.controlButtonDisabled,
+            ]}
+          >
+            <Text style={styles.buttonText}>
+              {!isReady ? '...' : playing ? 'PAUSE' : 'PLAY'}
+            </Text>
+          </Pressable>
 
-        <Pressable
-          disabled={!isReady}
-          onPress={handleReplay}
-          style={[
-            styles.controlButton,
-            !isReady && styles.controlButtonDisabled,
-          ]}
-        >
-          <Text style={styles.buttonText}>REPLAY</Text>
-        </Pressable>
-      </View>
+          <Pressable
+            disabled={!isReady}
+            onPress={handleReplay}
+            style={[
+              styles.controlButton,
+              !isReady && styles.controlButtonDisabled,
+            ]}
+          >
+            <Text style={styles.buttonText}>REPLAY</Text>
+          </Pressable>
+        </View>
+      )}
     </View>
   );
 }
