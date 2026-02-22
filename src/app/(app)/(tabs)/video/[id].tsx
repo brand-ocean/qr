@@ -97,39 +97,28 @@ export default function VideoScreen() {
   const shouldShowWarning =
     video.contentWarning && acknowledgedWarningForId !== video.id;
 
-  if (isLandscape && !shouldShowWarning) {
-    const videoContainerWidth = Math.min(width, height * (16 / 9));
-    return (
-      <View style={styles.landscapeContainer}>
-        <View
-          style={[styles.landscapeVideoWrapper, { width: videoContainerWidth }]}
-        >
-          <YouTubePlayer
-            endTime={video.endTime}
-            onPlayStateChange={setIsVideoPlaying}
-            startTime={video.startTime}
-            videoId={video.videoId}
-          />
-        </View>
-      </View>
-    );
-  }
-
   return (
     <View style={styles.container}>
       <SunburstBackground paused={isVideoPlaying} />
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Image
-            resizeMode="contain"
-            source={viralLogo}
-            style={[
-              styles.logo,
-              { height: (screenWidth * 0.8) / LOGO_ASPECT_RATIO },
-            ]}
-          />
-        </View>
-        <View style={styles.cardContainer}>
+        {!isLandscape && (
+          <View style={styles.header}>
+            <Image
+              resizeMode="contain"
+              source={viralLogo}
+              style={[
+                styles.logo,
+                { height: (screenWidth * 0.8) / LOGO_ASPECT_RATIO },
+              ]}
+            />
+          </View>
+        )}
+        <View
+          style={[
+            styles.cardContainer,
+            isLandscape && styles.cardContainerLandscape,
+          ]}
+        >
           <View style={styles.card}>
             {shouldShowWarning ? (
               <View style={styles.warningContainer}>
@@ -158,9 +147,11 @@ export default function VideoScreen() {
                   startTime={video.startTime}
                   videoId={video.videoId}
                 />
-                <Text style={styles.rotateHint}>
-                  ↻ Draai voor groter scherm
-                </Text>
+                {!isLandscape && (
+                  <Text style={styles.rotateHint}>
+                    ↻ Draai voor groter scherm
+                  </Text>
+                )}
                 <ViralButton
                   onPress={() => router.push('/(app)/(tabs)/scanner' as Href)}
                   style={styles.fullWidthButton}
@@ -206,6 +197,10 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: 20,
   },
+  cardContainerLandscape: {
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+  },
   container: {
     flex: 1,
     overflow: 'hidden',
@@ -234,15 +229,6 @@ const styles = StyleSheet.create({
     marginBottom: 20,
     marginTop: 80,
     transform: [{ rotate: '-2deg' }],
-  },
-  landscapeContainer: {
-    alignItems: 'center',
-    backgroundColor: 'black',
-    flex: 1,
-    justifyContent: 'center',
-  },
-  landscapeVideoWrapper: {
-    aspectRatio: 16 / 9,
   },
   loadingCard: {
     alignItems: 'center',
