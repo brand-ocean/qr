@@ -47,9 +47,8 @@ function fallbackHtml(cardId: string, env: Env) {
         position: absolute;
         width: 200vmax;
         height: 200vmax;
-        top: 50%;
-        left: 50%;
-        transform: translate(-50%, -50%);
+        top: calc(50% - 100vmax);
+        left: calc(50% - 100vmax);
         background: conic-gradient(
           #22B331 0deg 23deg, #016A2A 23deg 46deg, #22B331 46deg 69deg, #FFFFFF 69deg 72deg,
           #EC001B 72deg 95deg, #7E131C 95deg 118deg, #EC001B 118deg 141deg, #FFFFFF 141deg 144deg,
@@ -59,7 +58,7 @@ function fallbackHtml(cardId: string, env: Env) {
         );
         animation: spin 60s linear infinite;
       }
-      @keyframes spin { to { transform: translate(-50%, -50%) rotate(360deg); } }
+      @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
       .card { position: relative; z-index: 1; width: 100%; max-width: 520px; background: #111; border-radius: 16px; padding: 20px; box-sizing: border-box; }
       h1 { margin: 0 0 12px; }
       p { line-height: 1.5; }
