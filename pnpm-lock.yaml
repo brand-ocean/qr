@@ -4,6 +4,11 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+patchedDependencies:
+  react-native-youtube-iframe@2.4.1:
+    hash: bcea3b96410e12e84d3dd4d202905cef57485a76fe0f381648fedb36eb2e49f5
+    path: patches/react-native-youtube-iframe@2.4.1.patch
+
 importers:
 
   .:
@@ -100,7 +105,7 @@ importers:
         version: 0.6.1(@babel/core@7.28.5)(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0)
       react-native-youtube-iframe:
         specifier: ^2.4.1
-        version: 2.4.1(react-native-webview@13.15.0(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0))(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0)
+        version: 2.4.1(patch_hash=bcea3b96410e12e84d3dd4d202905cef57485a76fe0f381648fedb36eb2e49f5)(react-native-webview@13.15.0(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0))(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0)
     devDependencies:
       '@ianvs/prettier-plugin-sort-imports':
         specifier: ^4.7.0
@@ -10684,7 +10689,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  react-native-youtube-iframe@2.4.1(react-native-webview@13.15.0(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0))(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0):
+  react-native-youtube-iframe@2.4.1(patch_hash=bcea3b96410e12e84d3dd4d202905cef57485a76fe0f381648fedb36eb2e49f5)(react-native-webview@13.15.0(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0))(react-native@0.81.4(@babel/core@7.28.5)(@types/react@19.2.2)(react@19.2.0))(react@19.2.0):
     dependencies:
       events: 3.3.0
       react: 19.2.0

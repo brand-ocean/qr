@@ -3,3 +3,6 @@ ignorePatchFailures: false
 onlyBuiltDependencies:
   - esbuild
   - unrs-resolver
+
+patchedDependencies:
+  react-native-youtube-iframe@2.4.1: patches/react-native-youtube-iframe@2.4.1.patch

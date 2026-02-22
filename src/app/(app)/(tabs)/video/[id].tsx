@@ -1,6 +1,6 @@
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
 import { useMemo, useState } from 'react';
-import { Image, StyleSheet, View } from 'react-native';
+import { Image, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { getVideoById, type VideoCard } from 'src/data/videos.ts';
 import SunburstBackground from 'src/ui/SunburstBackground.tsx';
@@ -9,7 +9,10 @@ import ViralButton from 'src/ui/ViralButton.tsx';
 import YouTubePlayer from 'src/ui/YouTubePlayer.tsx';
 import viralLogo from '../../../../../assets/images/virals-logo.png';
 
+const LOGO_ASPECT_RATIO = 1279 / 771;
+
 export default function VideoScreen() {
+  const { width: screenWidth } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
@@ -36,7 +39,7 @@ export default function VideoScreen() {
   }, [normalizedId, video]);
 
   const goBack = () => {
-    router.back();
+    router.replace('/');
   };
 
   const goHome = () => {
@@ -85,7 +88,14 @@ export default function VideoScreen() {
       <SunburstBackground paused={isVideoPlaying} />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Image resizeMode="contain" source={viralLogo} style={styles.logo} />
+          <Image
+            resizeMode="contain"
+            source={viralLogo}
+            style={[
+              styles.logo,
+              { height: (screenWidth * 0.8) / LOGO_ASPECT_RATIO },
+            ]}
+          />
         </View>
         <View style={styles.cardContainer}>
           <View style={styles.card}>
@@ -204,7 +214,6 @@ const styles = StyleSheet.create({
     textShadowRadius: 0,
   },
   logo: {
-    height: 80,
     width: '80%',
   },
   safeArea: {

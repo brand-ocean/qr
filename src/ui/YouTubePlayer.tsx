@@ -1,4 +1,3 @@
-import { BlurView } from 'expo-blur';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import type { ComponentType } from 'react';
 import type { LayoutChangeEvent, StyleProp, ViewStyle } from 'react-native';
@@ -137,11 +136,15 @@ export default function YouTubePlayerComponent({
     onReplay?.();
   }, [startTime, onReplay, onPlayStateChange]);
 
-  const handleTogglePlay = useCallback(() => {
+  const handleTogglePlay = useCallback(async () => {
     playClickSound();
-    const newPlayingState = !playing;
-    setPlaying(newPlayingState);
-    onPlayStateChange?.(newPlayingState);
+    const newState = !playing;
+    setPlaying(newState);
+    onPlayStateChange?.(newState);
+    if (newState && playerRef.current) {
+      const currentTime = await playerRef.current.getCurrentTime();
+      await playerRef.current.seekTo(currentTime, true);
+    }
   }, [playing, onPlayStateChange]);
 
   // Block navigation to external YouTube links (logo, title clicks)
@@ -219,9 +222,6 @@ export default function YouTubePlayerComponent({
           }}
           webViewStyle={{ opacity: 0.99 }}
         />
-
-        {/* Top blur overlay - hides video title */}
-        <BlurView intensity={35} style={styles.blurOverlay} tint="dark" />
       </View>
 
       {/* Control Buttons */}
@@ -255,16 +255,6 @@ export default function YouTubePlayerComponent({
 }
 
 const styles = StyleSheet.create({
-  blurOverlay: {
-    borderTopLeftRadius: 16,
-    borderTopRightRadius: 16,
-    height: 48,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-    zIndex: 20,
-  },
   buttonText: {
     color: 'black',
     fontFamily: 'AeonikFono-Black',

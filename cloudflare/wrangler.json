@@ -9,6 +9,6 @@
   ],
   "vars": {
     "APP_STORE_URL": "https://apps.apple.com/",
-    "PLAY_STORE_URL": "https://play.google.com/"
+    "PLAY_STORE_URL": "https://play.google.com/store/apps/details?id=nl.viralsgame.app"
   }
 }

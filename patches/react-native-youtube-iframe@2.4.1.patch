@@ -1,0 +1,21 @@
+diff --git a/lib/commonjs/YoutubeIframe.js b/lib/commonjs/YoutubeIframe.js
+index 0be2dad8ab785444d08e7a166d2fe83d2c14a4f0..43d1eb4458d0f6ffffee27bf5b607b761d13e55c 100644
+--- a/lib/commonjs/YoutubeIframe.js
++++ b/lib/commonjs/YoutubeIframe.js
+@@ -104,12 +104,13 @@ const YoutubeIframe = (props, ref) => {
+     }
+   }), []);
+   (0, _react.useEffect)(() => {
++    if (!playerReady) return;
+     if (play) {
+-      sendPostMessage('playVideo', {});
++      webViewRef.current?.injectJavaScript('player.playVideo();true;');
+     } else {
+-      sendPostMessage('pauseVideo', {});
++      webViewRef.current?.injectJavaScript('player.pauseVideo();true;');
+     }
+-  }, [play, sendPostMessage]);
++  }, [play, playerReady]);
+   (0, _react.useEffect)(() => {
+     if (mute) {
+       sendPostMessage('muteVideo', {});

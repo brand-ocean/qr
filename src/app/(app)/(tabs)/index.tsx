@@ -1,20 +1,26 @@
 import { useRouter, type Href } from 'expo-router';
 import { useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import {
+  Image,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { getRandomVideo, type VideoCard } from 'src/data/videos.ts';
-import { playClickSound, playSuccessSound } from 'src/lib/sound.ts';
+import { playClickSound } from 'src/lib/sound.ts';
 import RulesModal from 'src/ui/RulesModal.tsx';
 import SunburstBackground from 'src/ui/SunburstBackground.tsx';
 import Text from 'src/ui/Text.tsx';
 import ViralButton from 'src/ui/ViralButton.tsx';
-import YouTubePlayer from 'src/ui/YouTubePlayer.tsx';
+import viralLogo from '../../../../assets/images/virals-logo.png';
+
+const LOGO_ASPECT_RATIO = 1279 / 771;
 
 export default function GameScreen() {
+  const { width: screenWidth } = useWindowDimensions();
   const router = useRouter();
-  const [selectedCard, setSelectedCard] = useState<VideoCard | null>(null);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
-  const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   const openRules = () => {
     playClickSound();
@@ -26,15 +32,10 @@ export default function GameScreen() {
     router.push('/(app)/(tabs)/scanner' as Href);
   };
 
-  const loadRandomCard = () => {
-    playSuccessSound();
-    setSelectedCard(getRandomVideo());
-  };
-
   return (
     <View style={styles.container}>
       {/* Sunburst Background */}
-      <SunburstBackground paused={isVideoPlaying} />
+      <SunburstBackground />
 
       <SafeAreaView style={styles.safeArea}>
         {/* Top Right Info Button */}
@@ -46,52 +47,28 @@ export default function GameScreen() {
 
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.title}>VIRALS</Text>
-          <Text style={styles.subtitle}>MEME EDITIE</Text>
+          <Image
+            resizeMode="contain"
+            source={viralLogo}
+            style={[
+              styles.logo,
+              { height: (screenWidth * 0.8) / LOGO_ASPECT_RATIO },
+            ]}
+          />
         </View>
 
         {/* Main Card */}
         <View style={styles.cardContainer}>
           <View style={styles.card}>
-            {selectedCard ? (
-              <>
-                <YouTubePlayer
-                  endTime={selectedCard.endTime}
-                  onPlayStateChange={setIsVideoPlaying}
-                  startTime={selectedCard.startTime}
-                  videoId={selectedCard.videoId}
-                />
-                <ViralButton
-                  onPress={openScanner}
-                  style={styles.fullWidthButton}
-                  title="SCAN KAART"
-                  variant="primary"
-                />
-              </>
-            ) : (
-              <View style={styles.emptyState}>
-                {/* Fake Video Placeholder */}
-                <View style={styles.cardPlaceholder}>
-                  <Text style={styles.playIcon}>▶</Text>
-                </View>
-                <Text style={styles.emptyText}>
-                  Scan een QR code op een kaart om de video te bekijken!
-                </Text>
-                <ViralButton
-                  onPress={openScanner}
-                  style={styles.fullWidthButton}
-                  title="SCAN KAART"
-                  variant="primary"
-                />
-                {/* Dev Button */}
-                <ViralButton
-                  onPress={loadRandomCard}
-                  style={styles.fullWidthButton}
-                  title="Test Video (Dev)"
-                  variant="dev"
-                />
-              </View>
-            )}
+            <Text style={styles.emptyText}>
+              Scan een QR code op een kaart om de video te bekijken!
+            </Text>
+            <ViralButton
+              onPress={openScanner}
+              style={styles.fullWidthButton}
+              title="SCAN KAART"
+              variant="primary"
+            />
           </View>
         </View>
       </SafeAreaView>
@@ -117,28 +94,12 @@ const styles = StyleSheet.create({
     shadowRadius: 0,
   },
   cardContainer: {
-    flex: 1,
-    justifyContent: 'center',
+    paddingBottom: 20,
     paddingHorizontal: 20,
-  },
-  cardPlaceholder: {
-    alignItems: 'center',
-    aspectRatio: 16 / 9,
-    backgroundColor: 'black',
-    borderColor: 'white',
-    borderRadius: 20,
-    borderWidth: 4,
-    justifyContent: 'center',
-    width: '100%',
   },
   container: {
     flex: 1,
     overflow: 'hidden',
-  },
-  emptyState: {
-    alignItems: 'center',
-    gap: 20,
-    paddingVertical: 20,
   },
   emptyText: {
     color: 'black',
@@ -152,8 +113,8 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 80,
+    flex: 1,
+    justifyContent: 'center',
     transform: [{ rotate: '-2deg' }],
   },
   iconButton: {
@@ -177,31 +138,12 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 22,
   },
-  playIcon: {
-    color: 'rgba(255, 255, 255, 0.3)',
-    fontSize: 48,
+  logo: {
+    width: '80%',
   },
   safeArea: {
     flex: 1,
     zIndex: 1,
-  },
-  subtitle: {
-    color: '#FFCC00',
-    fontFamily: 'AeonikFono-Black',
-    fontSize: 32,
-    marginTop: -8,
-    textShadowColor: '#000',
-    textShadowOffset: { height: 3, width: 3 },
-    textShadowRadius: 0,
-  },
-  title: {
-    color: 'white',
-    fontFamily: 'AeonikFono-Black',
-    fontSize: 64,
-    letterSpacing: -2,
-    textShadowColor: '#000',
-    textShadowOffset: { height: 4, width: 4 },
-    textShadowRadius: 0,
   },
   topButtons: {
     position: 'absolute',

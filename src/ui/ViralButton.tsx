@@ -7,7 +7,7 @@ type ViralButtonProps = {
   readonly onPress: () => void;
   readonly style?: ViewStyle;
   readonly title: string;
-  readonly variant?: 'primary' | 'secondary' | 'outline' | 'dev';
+  readonly variant?: 'primary' | 'secondary' | 'outline';
 };
 
 export default function ViralButton({
@@ -30,8 +30,6 @@ export default function ViralButton({
         return styles.secondaryButton;
       case 'outline':
         return styles.outlineButton;
-      case 'dev':
-        return styles.devButton;
       default:
         return styles.primaryButton;
     }
@@ -45,8 +43,6 @@ export default function ViralButton({
         return styles.secondaryText;
       case 'outline':
         return styles.outlineText;
-      case 'dev':
-        return styles.devText;
       default:
         return styles.primaryText;
     }
@@ -123,16 +119,5 @@ const styles = StyleSheet.create({
     fontFamily: 'AeonikFono-Bold',
     fontSize: 14,
     textTransform: 'uppercase',
-  },
-  // Dev - Dashed border for development buttons
-  devButton: {
-    backgroundColor: '#eee',
-    borderColor: '#999',
-    borderStyle: 'dashed',
-    borderWidth: 2,
-  },
-  devText: {
-    color: '#666',
-    fontSize: 12,
   },
 });

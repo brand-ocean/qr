@@ -2493,12 +2493,3 @@ export const VIDEO_BY_ID = new Map<string, VideoCard>(
 export function getVideoById(id: string): VideoCard | null {
   return VIDEO_BY_ID.get(id) ?? null;
 }
-
-/**
- * Get a random video from the collection.
- * @returns A random video card
- */
-export function getRandomVideo(): VideoCard {
-  const randomIndex = Math.floor(Math.random() * VIDEOS.length);
-  return VIDEOS[randomIndex];
-}
