@@ -20,7 +20,7 @@
     "strict": true,
     "target": "es2022"
   },
-  "exclude": ["node_modules", "virals-web"],
+  "exclude": ["node_modules", "virals-web", "cloudflare-worker"],
   "include": [
     "**/*.ts",
     "**/*.tsx",

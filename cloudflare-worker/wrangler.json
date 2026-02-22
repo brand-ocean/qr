@@ -1,0 +1,14 @@
+{
+  "$schema": "./node_modules/wrangler/config-schema.json",
+  "name": "viralsgame",
+  "main": "src/index.ts",
+  "compatibility_date": "2026-02-17",
+  "routes": [
+    { "pattern": "viralsgame.nl/*", "zone_name": "viralsgame.nl" },
+    { "pattern": "www.viralsgame.nl/*", "zone_name": "viralsgame.nl" }
+  ],
+  "vars": {
+    "APP_STORE_URL": "https://apps.apple.com/",
+    "PLAY_STORE_URL": "https://play.google.com/"
+  }
+}

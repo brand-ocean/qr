@@ -5,7 +5,6 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import { getRandomVideo, type VideoCard } from 'src/data/videos.ts';
 import { playClickSound, playSuccessSound } from 'src/lib/sound.ts';
 import RulesModal from 'src/ui/RulesModal.tsx';
-import SuggestionModal from 'src/ui/SuggestionModal.tsx';
 import SunburstBackground from 'src/ui/SunburstBackground.tsx';
 import Text from 'src/ui/Text.tsx';
 import ViralButton from 'src/ui/ViralButton.tsx';
@@ -15,17 +14,11 @@ export default function GameScreen() {
   const router = useRouter();
   const [selectedCard, setSelectedCard] = useState<VideoCard | null>(null);
   const [isRulesOpen, setIsRulesOpen] = useState(false);
-  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
 
   const openRules = () => {
     playClickSound();
     setIsRulesOpen(true);
-  };
-
-  const openSuggestion = () => {
-    playClickSound();
-    setIsSuggestionOpen(true);
   };
 
   const openScanner = () => {
@@ -99,26 +92,12 @@ export default function GameScreen() {
                 />
               </View>
             )}
-
-            <ViralButton
-              onPress={openSuggestion}
-              style={StyleSheet.flatten([
-                styles.fullWidthButton,
-                styles.suggestionButton,
-              ])}
-              title="TIP ACHTERLATEN?"
-              variant="outline"
-            />
           </View>
         </View>
       </SafeAreaView>
 
       {/* Modals */}
       <RulesModal onClose={() => setIsRulesOpen(false)} visible={isRulesOpen} />
-      <SuggestionModal
-        onClose={() => setIsSuggestionOpen(false)}
-        visible={isSuggestionOpen}
-      />
     </View>
   );
 }
@@ -214,10 +193,6 @@ const styles = StyleSheet.create({
     textShadowColor: '#000',
     textShadowOffset: { height: 3, width: 3 },
     textShadowRadius: 0,
-  },
-  suggestionButton: {
-    marginTop: 10,
-    opacity: 0.6,
   },
   title: {
     color: 'white',
