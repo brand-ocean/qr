@@ -118,13 +118,13 @@ function createVideosFile(videos) {
     .map((video) => {
       return [
         '  {',
+        `    contentWarning: ${video.contentWarning},`,
+        `    endTime: ${video.endTime},`,
         `    id: '${escapeSingleQuotedString(video.id)}',`,
         `    quote: '${escapeSingleQuotedString(video.quote)}',`,
-        `    videoId: '${escapeSingleQuotedString(video.videoId)}',`,
         `    startTime: ${video.startTime},`,
-        `    endTime: ${video.endTime},`,
+        `    videoId: '${escapeSingleQuotedString(video.videoId)}',`,
         `    year: ${video.year},`,
-        `    contentWarning: ${video.contentWarning},`,
         '  },',
       ].join('\n');
     })
@@ -138,13 +138,13 @@ function createVideosFile(videos) {
  */
 
 export type VideoCard = {
+  readonly contentWarning: boolean;
+  readonly endTime: number;
   readonly id: string;
   readonly quote: string;
-  readonly videoId: string;
   readonly startTime: number;
-  readonly endTime: number;
+  readonly videoId: string;
   readonly year: number;
-  readonly contentWarning: boolean;
 };
 
 export const VIDEOS: ReadonlyArray<VideoCard> = [
