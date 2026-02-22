@@ -6,8 +6,8 @@ Worker code is deployed. DNS propagation for `viralsgame.nl` is still pending �
 
 ## Before the Worker is fully live
 
-- [ ] **Fill iOS Team ID** — replace `YOUR_TEAM_ID` in `cloudflare-worker/src/index.ts` with the Apple Developer Team ID (10-character alphanumeric string, e.g. `AB12CD34EF`)
-- [ ] **Fill store URLs** — update `APP_STORE_URL` and `PLAY_STORE_URL` in `cloudflare-worker/wrangler.json` with the real App Store and Google Play URLs once the app is published
+- [ ] **Fill iOS Team ID** — replace `YOUR_TEAM_ID` in `cloudflare/src/index.ts` with the Apple Developer Team ID (10-character alphanumeric string, e.g. `AB12CD34EF`)
+- [ ] **Fill store URLs** — update `APP_STORE_URL` and `PLAY_STORE_URL` in `cloudflare/wrangler.json` with the real App Store and Google Play URLs once the app is published
 - [ ] **Run `wrangler deploy`** after the `viralsgame.nl` zone is active in Cloudflare
 - [ ] **Verify endpoints** respond with HTTP 200:
   - `https://viralsgame.nl/.well-known/apple-app-site-association`

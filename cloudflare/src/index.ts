@@ -29,7 +29,7 @@ const ASSET_LINKS = [
 ];
 
 function fallbackHtml(cardId: string, env: Env) {
-  const escapedCardId = cardId.replace(/[^a-z0-9]/gi, '');
+  const escapedCardId = cardId.replaceAll(/[^\da-z]/gi, '');
   const deepLink = `viralsgame://${escapedCardId}`;
 
   return `<!doctype html>
@@ -80,8 +80,8 @@ export default {
     ) {
       return new Response(JSON.stringify(AASA), {
         headers: {
-          'Content-Type': 'application/json',
           'Cache-Control': 'public, max-age=300',
+          'Content-Type': 'application/json',
         },
       });
     }
@@ -89,8 +89,8 @@ export default {
     if (pathname === '/.well-known/assetlinks.json') {
       return new Response(JSON.stringify(ASSET_LINKS), {
         headers: {
-          'Content-Type': 'application/json',
           'Cache-Control': 'public, max-age=300',
+          'Content-Type': 'application/json',
         },
       });
     }
@@ -99,8 +99,8 @@ export default {
     if (match?.[1]) {
       return new Response(fallbackHtml(match[1].toLowerCase(), env), {
         headers: {
-          'Content-Type': 'text/html; charset=utf-8',
           'Cache-Control': 'no-store',
+          'Content-Type': 'text/html; charset=utf-8',
         },
       });
     }
