@@ -1,9 +1,13 @@
 import { VStack } from '@nkzw/stack';
 import { Stack as ExpoStack } from 'expo-router';
+import { Switch, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useSettings } from 'src/context/SettingsContext.tsx';
 import Text from 'src/ui/Text.tsx';
 
 export default function RulesScreen() {
+  const { setShowContentWarning, showContentWarning } = useSettings();
+
   return (
     <>
       <ExpoStack.Screen options={{ title: 'Regels' }} />
@@ -61,6 +65,30 @@ export default function RulesScreen() {
                 • Bekijk clips meerdere keren om alles te zien
               </Text>
             </VStack>
+          </VStack>
+          {/* Inhoudswaarschuwing */}
+          <VStack gap={12}>
+            <Text className="text-2xl font-bold text-text">
+              Inhoudswaarschuwing
+            </Text>
+            <Text className="text-base leading-6 text-textLight">
+              Sommige kaarten bevatten mogelijk schokkende of beledigende
+              inhoud. Zet de waarschuwing aan om een melding te krijgen voordat
+              je zo&apos;n kaart bekijkt.
+            </Text>
+            <View
+              style={{
+                alignItems: 'center',
+                flexDirection: 'row',
+                justifyContent: 'space-between',
+              }}
+            >
+              <Text className="text-base text-text">Toon waarschuwing</Text>
+              <Switch
+                onValueChange={setShowContentWarning}
+                value={showContentWarning}
+              />
+            </View>
           </VStack>
         </VStack>
       </ScrollView>

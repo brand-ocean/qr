@@ -67,6 +67,7 @@ export default function ViralButton({
 const styles = StyleSheet.create({
   button: {
     alignItems: 'center',
+    borderRadius: 16,
     justifyContent: 'center',
     paddingHorizontal: 20,
     paddingVertical: 15,
@@ -78,7 +79,7 @@ const styles = StyleSheet.create({
   primaryButton: {
     backgroundColor: '#007AFF',
     borderColor: 'black',
-    borderWidth: 3,
+    borderWidth: 4,
     elevation: 4,
     shadowColor: 'black',
     shadowOffset: { height: 4, width: 4 },
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
   secondaryButton: {
     backgroundColor: '#FFD700',
     borderColor: 'black',
-    borderWidth: 3,
+    borderWidth: 4,
     elevation: 4,
     shadowColor: 'black',
     shadowOffset: { height: 4, width: 4 },
@@ -112,7 +113,7 @@ const styles = StyleSheet.create({
   outlineButton: {
     backgroundColor: 'transparent',
     borderColor: 'black',
-    borderWidth: 3,
+    borderWidth: 4,
   },
   outlineText: {
     color: 'black',

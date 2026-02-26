@@ -5,6 +5,7 @@ import { Slot, SplashScreen } from 'expo-router';
 import { lockAsync, OrientationLock } from 'expo-screen-orientation';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SettingsProvider } from 'src/context/SettingsContext.tsx';
 
 // Keep splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -38,9 +39,11 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView>
-      <VStack className="flex-1 basis-full">
-        <Slot />
-      </VStack>
+      <SettingsProvider>
+        <VStack className="flex-1 basis-full">
+          <Slot />
+        </VStack>
+      </SettingsProvider>
     </GestureHandlerRootView>
   );
 }

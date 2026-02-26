@@ -1,5 +1,6 @@
-import { Modal, Pressable, StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useSettings } from '../context/SettingsContext.tsx';
 import { playClickSound } from '../lib/sound.ts';
 import Text from './Text.tsx';
 
@@ -9,6 +10,8 @@ type RulesModalProps = {
 };
 
 export default function RulesModal({ onClose, visible }: RulesModalProps) {
+  const { setShowContentWarning, showContentWarning } = useSettings();
+
   const handleClose = () => {
     playClickSound();
     onClose();
@@ -54,6 +57,24 @@ export default function RulesModal({ onClose, visible }: RulesModalProps) {
                 en REPLAY om opnieuw te beginnen.
               </Text>
             </View>
+
+            <View style={styles.divider} />
+
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Inhoudswaarschuwing</Text>
+              <Text style={styles.sectionText}>
+                Sommige kaarten bevatten mogelijk schokkende of beledigende
+                inhoud. Zet de waarschuwing aan om een melding te krijgen
+                voordat je zo&apos;n kaart bekijkt.
+              </Text>
+              <View style={styles.toggleRow}>
+                <Text style={styles.sectionText}>Toon waarschuwing</Text>
+                <Switch
+                  onValueChange={setShowContentWarning}
+                  value={showContentWarning}
+                />
+              </View>
+            </View>
           </ScrollView>
         </View>
       </View>
@@ -73,6 +94,11 @@ const styles = StyleSheet.create({
   },
   content: {
     padding: 20,
+  },
+  divider: {
+    borderTopColor: '#eee',
+    borderTopWidth: 2,
+    marginBottom: 24,
   },
   header: {
     alignItems: 'center',
@@ -123,5 +149,11 @@ const styles = StyleSheet.create({
     fontFamily: 'AeonikFono-Black',
     fontSize: 24,
     textTransform: 'uppercase',
+  },
+  toggleRow: {
+    alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 12,
   },
 });

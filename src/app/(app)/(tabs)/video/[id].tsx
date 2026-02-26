@@ -4,14 +4,17 @@ import {
   OrientationLock,
   unlockAsync,
 } from 'expo-screen-orientation';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Image, StyleSheet, useWindowDimensions, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useSettings } from 'src/context/SettingsContext.tsx';
 import { getVideoById, type VideoCard } from 'src/data/videos.ts';
 import SunburstBackground from 'src/ui/SunburstBackground.tsx';
 import Text from 'src/ui/Text.tsx';
 import ViralButton from 'src/ui/ViralButton.tsx';
-import YouTubePlayer from 'src/ui/YouTubePlayer.tsx';
+import YouTubePlayer, {
+  type YouTubePlayerHandle,
+} from 'src/ui/YouTubePlayer.tsx';
 import viralLogo from '../../../../../assets/images/virals-logo.png';
 
 const LOGO_ASPECT_RATIO = 1279 / 771;
@@ -23,9 +26,9 @@ export default function VideoScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [acknowledgedWarningForId, setAcknowledgedWarningForId] = useState<
-    string | null
-  >(null);
+  const [landscapeIsReady, setLandscapeIsReady] = useState(false);
+  const landscapeRef = useRef<YouTubePlayerHandle>(null);
+  const { setShowContentWarning, showContentWarning } = useSettings();
 
   useEffect(() => {
     unlockAsync();
@@ -94,103 +97,131 @@ export default function VideoScreen() {
     );
   }
 
-  const shouldShowWarning =
-    video.contentWarning && acknowledgedWarningForId !== video.id;
+  const shouldShowWarning = video.contentWarning && showContentWarning;
 
-  // In landscape the card is 90% of screen height; compute the video width
-  // that fits the card's inner height at 16:9, leaving room for the hint
-  // text below: cardInnerHeight - border(10) - padding(40) - gap(16) - text(18)
-  const landscapeVideoWidth = (height * 0.9 - 84) * (16 / 9);
+  const landscapeVideoHeight = height - 32;
+  const landscapeVideoWidth = landscapeVideoHeight * (16 / 9);
 
   return (
-    <View style={styles.container}>
-      <SunburstBackground paused={isVideoPlaying} />
+    <View style={[styles.container, isLandscape && styles.containerLandscape]}>
+      {!isLandscape && <SunburstBackground paused={isVideoPlaying} />}
       <SafeAreaView style={styles.safeArea}>
-        {!isLandscape && (
-          <View style={styles.header}>
-            <Image
-              resizeMode="contain"
-              source={viralLogo}
+        {isLandscape ? (
+          <View style={styles.landscapeLayout}>
+            <View
               style={[
-                styles.logo,
-                { height: (screenWidth * 0.8) / LOGO_ASPECT_RATIO },
+                styles.landscapeVideoPanel,
+                { width: landscapeVideoWidth },
               ]}
-            />
+            >
+              <YouTubePlayer
+                endTime={video.endTime}
+                hideControls={true}
+                onPlayStateChange={setIsVideoPlaying}
+                onReadyChange={setLandscapeIsReady}
+                ref={landscapeRef}
+                startTime={video.startTime}
+                videoId={video.videoId}
+              />
+            </View>
+            <View style={styles.landscapeButtonPanel}>
+              <ViralButton
+                disabled={!landscapeIsReady}
+                onPress={() => landscapeRef.current?.togglePlay()}
+                style={styles.fullWidthButton}
+                title={isVideoPlaying ? 'PAUSE' : 'PLAY'}
+                variant="secondary"
+              />
+              <ViralButton
+                disabled={!landscapeIsReady}
+                onPress={() => landscapeRef.current?.replay()}
+                style={styles.fullWidthButton}
+                title="REPLAY"
+                variant="secondary"
+              />
+              <ViralButton
+                onPress={() => router.push('/(app)/(tabs)/scanner' as Href)}
+                style={styles.fullWidthButton}
+                title="SCAN KAART"
+                variant="primary"
+              />
+              <ViralButton
+                onPress={goBack}
+                style={styles.fullWidthButton}
+                title="TERUG"
+                variant="outline"
+              />
+            </View>
           </View>
-        )}
-        <View
-          style={[
-            styles.cardContainer,
-            isLandscape && { paddingVertical: height * 0.05 },
-          ]}
-        >
-          <View style={[styles.card, isLandscape && styles.cardLandscape]}>
-            {shouldShowWarning ? (
-              <View style={styles.warningContainer}>
-                <Text style={styles.warningTitle}>Let op</Text>
-                <Text style={styles.warningText}>
-                  Deze kaart bevat mogelijk schokkende of beledigende inhoud.
-                </Text>
-                <ViralButton
-                  onPress={() => setAcknowledgedWarningForId(video.id)}
-                  style={styles.fullWidthButton}
-                  title="DOORGAAN"
-                  variant="primary"
-                />
-                <ViralButton
-                  onPress={goBack}
-                  style={styles.fullWidthButton}
-                  title="TERUG"
-                  variant="outline"
+        ) : (
+          <>
+            {!shouldShowWarning && (
+              <View style={styles.header}>
+                <Image
+                  resizeMode="contain"
+                  source={viralLogo}
+                  style={[
+                    styles.logo,
+                    { height: (screenWidth * 0.8) / LOGO_ASPECT_RATIO },
+                  ]}
                 />
               </View>
-            ) : isLandscape ? (
-              <>
-                <View
-                  style={[
-                    styles.landscapeVideoContainer,
-                    { width: landscapeVideoWidth },
-                  ]}
-                >
-                  <YouTubePlayer
-                    endTime={video.endTime}
-                    hideControls={true}
-                    onPlayStateChange={setIsVideoPlaying}
-                    startTime={video.startTime}
-                    videoId={video.videoId}
-                  />
-                </View>
-                <Text style={styles.rotateHint}>
-                  ↺ Draai terug voor controls
-                </Text>
-              </>
-            ) : (
-              <>
-                <YouTubePlayer
-                  endTime={video.endTime}
-                  onPlayStateChange={setIsVideoPlaying}
-                  startTime={video.startTime}
-                  videoId={video.videoId}
-                />
-                <Text style={styles.rotateHint}>
-                  ↻ Draai voor groter scherm
-                </Text>
-                <ViralButton
-                  onPress={() => router.push('/(app)/(tabs)/scanner' as Href)}
-                  style={styles.fullWidthButton}
-                  title="SCAN NIEUWE KAART"
-                  variant="primary"
-                />
-                <ViralButton
-                  onPress={goBack}
-                  style={styles.fullWidthButton}
-                  title="TERUG"
-                  variant="outline"
-                />
-              </>
             )}
-          </View>
-        </View>
+            <View style={styles.cardContainer}>
+              <View style={styles.card}>
+                {shouldShowWarning ? (
+                  <View style={styles.warningContainer}>
+                    <Text style={styles.warningTitle}>Let op</Text>
+                    <Text style={styles.warningText}>
+                      Deze kaart bevat mogelijk schokkende of beledigende
+                      inhoud. Door op doorgaan te klikken, zet je de
+                      waarschuwing voortaan uit. Je kunt dit altijd weer
+                      aanzetten via de spelregels.
+                    </Text>
+                    <ViralButton
+                      onPress={() => setShowContentWarning(false)}
+                      style={styles.fullWidthButton}
+                      title="DOORGAAN"
+                      variant="primary"
+                    />
+                    <ViralButton
+                      onPress={goBack}
+                      style={styles.fullWidthButton}
+                      title="TERUG"
+                      variant="outline"
+                    />
+                  </View>
+                ) : (
+                  <>
+                    <YouTubePlayer
+                      endTime={video.endTime}
+                      onPlayStateChange={setIsVideoPlaying}
+                      startTime={video.startTime}
+                      videoId={video.videoId}
+                    />
+                    <Text style={styles.rotateHint}>
+                      ↻ Draai voor groter scherm
+                    </Text>
+                    <ViralButton
+                      onPress={() =>
+                        router.push('/(app)/(tabs)/scanner' as Href)
+                      }
+                      style={styles.fullWidthButton}
+                      title="SCAN NIEUWE KAART"
+                      variant="primary"
+                    />
+                    <ViralButton
+                      onPress={goBack}
+                      style={styles.fullWidthButton}
+                      title="TERUG"
+                      variant="outline"
+                    />
+                  </>
+                )}
+              </View>
+            </View>
+          </>
+        )}
       </SafeAreaView>
     </View>
   );
@@ -209,7 +240,7 @@ const styles = StyleSheet.create({
     borderWidth: 5,
     elevation: 10,
     gap: 16,
-    padding: 20,
+    padding: 8,
     shadowColor: 'black',
     shadowOffset: { height: 15, width: 15 },
     shadowOpacity: 0.8,
@@ -218,16 +249,14 @@ const styles = StyleSheet.create({
   cardContainer: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 20,
-  },
-  cardLandscape: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
+    paddingHorizontal: 8,
   },
   container: {
     flex: 1,
     overflow: 'hidden',
+  },
+  containerLandscape: {
+    backgroundColor: 'white',
   },
   errorCard: {
     alignItems: 'center',
@@ -254,8 +283,19 @@ const styles = StyleSheet.create({
     marginTop: 80,
     transform: [{ rotate: '-2deg' }],
   },
-  landscapeVideoContainer: {
-    alignSelf: 'center',
+  landscapeButtonPanel: {
+    flex: 1,
+    gap: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+  },
+  landscapeLayout: {
+    flex: 1,
+    flexDirection: 'row',
+  },
+  landscapeVideoPanel: {
+    alignSelf: 'stretch',
+    justifyContent: 'center',
   },
   loadingCard: {
     alignItems: 'center',

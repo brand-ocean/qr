@@ -1,4 +1,10 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import {
+  useCallback,
+  useEffect,
+  useImperativeHandle,
+  useRef,
+  useState,
+} from 'react';
 import type { ComponentType } from 'react';
 import type { LayoutChangeEvent, StyleProp, ViewStyle } from 'react-native';
 import {
@@ -52,11 +58,18 @@ const YoutubeIframe = _YoutubeIframe as unknown as ComponentType<{
   webViewStyle?: StyleProp<ViewStyle>;
 }>;
 
+export type YouTubePlayerHandle = {
+  replay: () => void;
+  togglePlay: () => void;
+};
+
 type YouTubePlayerProps = {
   readonly endTime: number;
   readonly hideControls?: boolean;
   readonly onPlayStateChange?: (playing: boolean) => void;
+  readonly onReadyChange?: (ready: boolean) => void;
   readonly onReplay?: () => void;
+  readonly ref?: React.Ref<YouTubePlayerHandle>;
   readonly startTime: number;
   readonly videoId: string;
 };
@@ -65,7 +78,9 @@ export default function YouTubePlayerComponent({
   endTime,
   hideControls = false,
   onPlayStateChange,
+  onReadyChange,
   onReplay,
+  ref,
   startTime,
   videoId,
 }: YouTubePlayerProps) {
@@ -86,9 +101,10 @@ export default function YouTubePlayerComponent({
       setIsReady(false);
       setError(null);
       onPlayStateChange?.(false);
+      onReadyChange?.(false);
     }, 0);
     return () => clearTimeout(timer);
-  }, [videoId, onPlayStateChange]);
+  }, [videoId, onPlayStateChange, onReadyChange]);
 
   const handleStateChange = useCallback(
     async (state: string) => {
@@ -121,12 +137,17 @@ export default function YouTubePlayerComponent({
 
   const handleReady = useCallback(() => {
     setIsReady(true);
-  }, []);
+    onReadyChange?.(true);
+  }, [onReadyChange]);
 
-  const handleError = useCallback((errorMsg: string) => {
-    setError(`Video error: ${errorMsg}`);
-    setIsReady(false);
-  }, []);
+  const handleError = useCallback(
+    (errorMsg: string) => {
+      setError(`Video error: ${errorMsg}`);
+      setIsReady(false);
+      onReadyChange?.(false);
+    },
+    [onReadyChange],
+  );
 
   const handleReplay = useCallback(async () => {
     playClickSound();
@@ -148,6 +169,15 @@ export default function YouTubePlayerComponent({
       await playerRef.current.seekTo(currentTime, true);
     }
   }, [playing, onPlayStateChange]);
+
+  useImperativeHandle(
+    ref,
+    () => ({
+      replay: handleReplay,
+      togglePlay: handleTogglePlay,
+    }),
+    [handleTogglePlay, handleReplay],
+  );
 
   // Block navigation to external YouTube links (logo, title clicks)
   const handleShouldStartLoad = useCallback(
@@ -224,6 +254,7 @@ export default function YouTubePlayerComponent({
           }}
           webViewStyle={{ opacity: 0.99 }}
         />
+        <View pointerEvents="none" style={styles.titleBlurBar} />
       </View>
 
       {/* Control Buttons */}
@@ -272,6 +303,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#FFD700',
     borderColor: 'black',
+    borderRadius: 16,
     borderWidth: 4,
     flex: 1,
     paddingVertical: 15,
@@ -311,9 +343,17 @@ const styles = StyleSheet.create({
   retryButton: {
     backgroundColor: '#FFD700',
     borderColor: 'black',
-    borderWidth: 3,
+    borderWidth: 4,
     paddingHorizontal: 24,
     paddingVertical: 12,
+  },
+  titleBlurBar: {
+    backgroundColor: '#000',
+    height: 36,
+    left: 0,
+    position: 'absolute',
+    right: 0,
+    top: 0,
   },
   videoWrapper: {
     backgroundColor: '#000',
