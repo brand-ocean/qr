@@ -42,10 +42,7 @@ export default function GameScreen() {
         <View style={styles.layout}>
           {/* Left panel — logo */}
           <View style={styles.logoPanel}>
-            <Pressable
-              onPress={openRules}
-              style={[styles.iconButton, styles.logoPanelInfoButton]}
-            >
+            <Pressable onPress={openRules} style={styles.iconButton}>
               <Text style={styles.iconText}>i</Text>
             </Pressable>
             <Image
@@ -146,12 +143,8 @@ const styles = StyleSheet.create({
   logoPanel: {
     alignItems: 'center',
     flex: 1,
+    gap: 8,
     justifyContent: 'center',
-  },
-  logoPanelInfoButton: {
-    left: 12,
-    position: 'absolute',
-    top: 12,
   },
   safeArea: {
     flex: 1,

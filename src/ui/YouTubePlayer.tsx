@@ -7,13 +7,7 @@ import {
 } from 'react';
 import type { ComponentType } from 'react';
 import type { LayoutChangeEvent, StyleProp, ViewStyle } from 'react-native';
-import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  StyleSheet,
-  View,
-} from 'react-native';
+import { ActivityIndicator, Platform, StyleSheet, View } from 'react-native';
 import _YoutubeIframe, {
   type YoutubeIframeRef,
 } from 'react-native-youtube-iframe';
@@ -68,6 +62,7 @@ type YouTubePlayerProps = {
   readonly onPlayStateChange?: (playing: boolean) => void;
   readonly onReadyChange?: (ready: boolean) => void;
   readonly onReplay?: () => void;
+  readonly onVideoError?: (message: string) => void;
   readonly ref?: React.Ref<YouTubePlayerHandle>;
   readonly startTime: number;
   readonly videoId: string;
@@ -78,13 +73,13 @@ export default function YouTubePlayerComponent({
   onPlayStateChange,
   onReadyChange,
   onReplay,
+  onVideoError,
   ref,
   startTime,
   videoId,
 }: YouTubePlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [containerWidth, setContainerWidth] = useState(0);
   const playerRef = useRef<YoutubeIframeRef>(null);
 
@@ -101,7 +96,6 @@ export default function YouTubePlayerComponent({
     const timer = setTimeout(() => {
       setPlaying(false);
       setIsReady(false);
-      setError(null);
       onPlayStateChange?.(false);
       onReadyChange?.(false);
     }, 0);
@@ -137,20 +131,29 @@ export default function YouTubePlayerComponent({
 
   const handleError = useCallback(
     (errorMsg: string) => {
-      setError(`Video error: ${errorMsg}`);
+      const code = String(errorMsg).trim();
+      let message: string;
+      if (code === '100') {
+        message = 'Deze video is verwijderd of niet meer beschikbaar.';
+      } else if (code === '101' || code === '150') {
+        message = 'Deze video mag niet worden afgespeeld in de app.';
+      } else {
+        message = 'Er is een probleem met deze video. Probeer het opnieuw.';
+      }
       setIsReady(false);
       onReadyChange?.(false);
+      onVideoError?.(message);
     },
-    [onReadyChange],
+    [onReadyChange, onVideoError],
   );
 
   const handleReplay = useCallback(async () => {
     playClickSound();
-    setPlaying(true);
-    onPlayStateChange?.(true);
     if (playerRef.current) {
       await playerRef.current.seekTo(startTime, true);
     }
+    setPlaying(true);
+    onPlayStateChange?.(true);
     onReplay?.();
   }, [startTime, onReplay, onPlayStateChange]);
 
@@ -191,17 +194,6 @@ export default function YouTubePlayerComponent({
     },
     [],
   );
-
-  if (error) {
-    return (
-      <View style={styles.errorContainer}>
-        <Text style={styles.errorText}>{error}</Text>
-        <Pressable onPress={handleReplay} style={styles.retryButton}>
-          <Text style={styles.buttonText}>OPNIEUW</Text>
-        </Pressable>
-      </View>
-    );
-  }
 
   const playerEndTime = endTime > 0 ? endTime : undefined;
   const videoHeight = containerWidth > 0 ? containerWidth * (9 / 16) : 220;
@@ -267,26 +259,8 @@ export default function YouTubePlayerComponent({
 }
 
 const styles = StyleSheet.create({
-  buttonText: {
-    color: 'black',
-    fontFamily: 'AeonikFono-Black',
-    fontSize: 18,
-  },
   container: {
     width: '100%',
-  },
-  errorContainer: {
-    alignItems: 'center',
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-    borderRadius: 16,
-    gap: 16,
-    padding: 32,
-  },
-  errorText: {
-    color: colors.error,
-    fontSize: 16,
-    fontWeight: '600',
-    textAlign: 'center',
   },
   loadingOverlay: {
     ...StyleSheet.absoluteFillObject,
@@ -299,13 +273,6 @@ const styles = StyleSheet.create({
     color: 'white',
     fontSize: 16,
     marginTop: 16,
-  },
-  retryButton: {
-    backgroundColor: '#FFD700',
-    borderColor: 'black',
-    borderWidth: 4,
-    paddingHorizontal: 24,
-    paddingVertical: 12,
   },
   videoWrapper: {
     backgroundColor: '#000',

@@ -3,10 +3,22 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const DEFAULT_CSV_PATH =
-  '/Users/brandocean/Downloads/Virals Meme lijst - Blad1.csv';
+  '/Users/brandocean/Downloads/Virals Meme lijst 03-30-2.csv';
+const MAX_CARD_NUMBER = 240;
 const DEFAULT_OUTPUT_PATH = path.join(process.cwd(), 'src/data/videos.ts');
 
+function detectDelimiter(firstLine) {
+  const semicolons = (firstLine.match(/;/g) ?? []).length;
+  const commas = (firstLine.match(/,/g) ?? []).length;
+  return semicolons > commas ? ';' : ',';
+}
+
 function parseCsv(content) {
+  const firstNewline = content.indexOf('\n');
+  const firstLine =
+    firstNewline === -1 ? content : content.slice(0, firstNewline);
+  const delimiter = detectDelimiter(firstLine);
+
   const rows = [];
   let row = [];
   let field = '';
@@ -35,7 +47,7 @@ function parseCsv(content) {
       continue;
     }
 
-    if (char === ',') {
+    if (char === delimiter) {
       row.push(field);
       field = '';
       continue;
@@ -223,11 +235,17 @@ function main() {
     });
   }
 
-  videos.sort((a, b) => a.id.localeCompare(b.id));
+  const filtered = videos.filter((v) => {
+    const num = Number.parseInt(v.id.replace('kaart', ''), 10);
+    return num >= 0 && num <= MAX_CARD_NUMBER;
+  });
+  filtered.sort((a, b) => a.id.localeCompare(b.id));
 
-  const output = createVideosFile(videos);
+  const output = createVideosFile(filtered);
   fs.writeFileSync(outputPath, output, 'utf8');
-  process.stdout.write(`Generated ${videos.length} videos at ${outputPath}\n`);
+  process.stdout.write(
+    `Generated ${filtered.length} videos (kaart0000–kaart${String(MAX_CARD_NUMBER).padStart(4, '0')}) at ${outputPath}\n`,
+  );
 }
 
 main();

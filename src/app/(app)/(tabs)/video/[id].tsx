@@ -28,6 +28,7 @@ export default function VideoScreen() {
   const router = useRouter();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
   const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const [videoError, setVideoError] = useState<string | null>(null);
   const playerRef = useRef<YouTubePlayerHandle>(null);
   const { setShowContentWarning, showContentWarning } = useSettings();
 
@@ -105,9 +106,9 @@ export default function VideoScreen() {
           {/* Video section */}
           <View style={styles.videoSection}>
             {shouldShowWarning ? (
-              <View style={styles.warningContainer}>
-                <Text style={styles.warningTitle}>Let op</Text>
-                <Text style={styles.warningText}>
+              <View style={styles.noticeCard}>
+                <Text style={styles.noticeTitle}>Let op</Text>
+                <Text style={styles.noticeText}>
                   Deze kaart bevat mogelijk schokkende of beledigende inhoud.
                   Door op doorgaan te klikken, zet je de waarschuwing voortaan
                   uit. Je kunt dit altijd weer aanzetten via de spelregels.
@@ -116,7 +117,7 @@ export default function VideoScreen() {
                   onPress={() => setShowContentWarning(false)}
                   style={styles.fullWidthButton}
                   title="DOORGAAN"
-                  variant="primary"
+                  variant="secondary"
                 />
                 <ViralButton
                   onPress={goBack}
@@ -125,12 +126,24 @@ export default function VideoScreen() {
                   variant="outline"
                 />
               </View>
+            ) : videoError ? (
+              <View style={styles.noticeCard}>
+                <Text style={styles.noticeTitle}>Video niet beschikbaar</Text>
+                <Text style={styles.noticeText}>{videoError}</Text>
+                <ViralButton
+                  onPress={() => setVideoError(null)}
+                  style={styles.fullWidthButton}
+                  title="OPNIEUW PROBEREN"
+                  variant="secondary"
+                />
+              </View>
             ) : (
               <View style={styles.videoFrame}>
                 <YouTubePlayer
                   endTime={video.endTime}
                   onPlayStateChange={setIsVideoPlaying}
                   onReadyChange={setIsPlayerReady}
+                  onVideoError={setVideoError}
                   ref={playerRef}
                   startTime={video.startTime}
                   videoId={video.videoId}
@@ -322,21 +335,33 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
   },
-  warningContainer: {
+  noticeCard: {
     alignItems: 'center',
-    gap: 16,
-    paddingVertical: 12,
+    alignSelf: 'center',
+    backgroundColor: 'white',
+    borderColor: 'black',
+    borderRadius: 20,
+    borderWidth: 4,
+    elevation: 8,
+    gap: 12,
+    maxWidth: 340,
+    padding: 20,
+    shadowColor: 'black',
+    shadowOffset: { height: 6, width: 6 },
+    shadowOpacity: 0.8,
+    shadowRadius: 0,
+    width: '90%',
   },
-  warningText: {
+  noticeText: {
     color: 'black',
     fontFamily: 'AeonikFono-Bold',
-    fontSize: 18,
-    lineHeight: 24,
+    fontSize: 14,
+    lineHeight: 20,
     textAlign: 'center',
   },
-  warningTitle: {
+  noticeTitle: {
     color: 'black',
     fontFamily: 'AeonikFono-Black',
-    fontSize: 30,
+    fontSize: 22,
   },
 });
