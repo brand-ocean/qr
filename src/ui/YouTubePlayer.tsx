@@ -65,7 +65,6 @@ export type YouTubePlayerHandle = {
 
 type YouTubePlayerProps = {
   readonly endTime: number;
-  readonly hideControls?: boolean;
   readonly onPlayStateChange?: (playing: boolean) => void;
   readonly onReadyChange?: (ready: boolean) => void;
   readonly onReplay?: () => void;
@@ -76,7 +75,6 @@ type YouTubePlayerProps = {
 
 export default function YouTubePlayerComponent({
   endTime,
-  hideControls = false,
   onPlayStateChange,
   onReadyChange,
   onReplay,
@@ -94,7 +92,11 @@ export default function YouTubePlayerComponent({
     setContainerWidth(event.nativeEvent.layout.width);
   }, []);
 
-  // Reset state when video changes
+  // Reset state when video changes.
+  // setTimeout(…, 0) defers the reset to after the current render cycle so
+  // the YoutubeIframe key change (which forces a remount) and this state
+  // reset don't race — without the deferral the parent can receive a
+  // stale onReadyChange(false) after the new player has already fired onReady.
   useEffect(() => {
     const timer = setTimeout(() => {
       setPlaying(false);
@@ -107,15 +109,8 @@ export default function YouTubePlayerComponent({
   }, [videoId, onPlayStateChange, onReadyChange]);
 
   const handleStateChange = useCallback(
-    async (state: string) => {
+    (state: string) => {
       if (state === 'ended') {
-        if (endTime > 0 && playerRef.current) {
-          await playerRef.current.seekTo(startTime, true);
-          setPlaying(true);
-          onPlayStateChange?.(true);
-          return;
-        }
-
         setPlaying(false);
         onPlayStateChange?.(false);
         return;
@@ -132,7 +127,7 @@ export default function YouTubePlayerComponent({
         onPlayStateChange?.(true);
       }
     },
-    [endTime, onPlayStateChange, startTime],
+    [onPlayStateChange],
   );
 
   const handleReady = useCallback(() => {
@@ -210,81 +205,63 @@ export default function YouTubePlayerComponent({
 
   const playerEndTime = endTime > 0 ? endTime : undefined;
   const videoHeight = containerWidth > 0 ? containerWidth * (9 / 16) : 220;
+  // Clip the top of the iframe to hide the YouTube title overlay.
+  // The wrapper has overflow:hidden + explicit height; the iframe shifts up inside it.
+  const TITLE_CLIP = 55;
+  const clippedHeight = Math.max(videoHeight - TITLE_CLIP, 0);
 
   return (
     <View style={styles.container}>
-      <View onLayout={handleLayout} style={styles.videoWrapper}>
+      <View
+        onLayout={handleLayout}
+        style={[
+          styles.videoWrapper,
+          containerWidth > 0 && { height: clippedHeight },
+        ]}
+      >
         {!isReady && (
           <View style={styles.loadingOverlay}>
             <ActivityIndicator color={colors.primaryYellow} size="large" />
             <Text style={styles.loadingText}>Laden...</Text>
           </View>
         )}
-        <YoutubeIframe
-          allowWebViewZoom={false}
-          forceAndroidAutoplay={true}
-          height={videoHeight}
-          initialPlayerParams={{
-            color: 'white',
-            controls: false,
-            end: playerEndTime,
-            iv_load_policy: 3,
-            modestbranding: true,
-            preventFullScreen: false,
-            rel: false,
-            start: startTime,
-          }}
-          key={`${videoId}-${startTime}-${endTime}`}
-          onChangeState={handleStateChange}
-          onError={handleError}
-          onReady={handleReady}
-          play={playing}
-          ref={playerRef}
-          videoId={videoId}
-          webViewProps={{
-            allowsLinkPreview: false,
-            androidLayerType:
-              Platform.OS === 'android' ? 'hardware' : undefined,
-            bounces: false,
-            mediaPlaybackRequiresUserAction:
-              Platform.OS === 'android' ? false : undefined,
-            onShouldStartLoadWithRequest: handleShouldStartLoad,
-            renderToHardwareTextureAndroid: true,
-            scrollEnabled: false,
-          }}
-          webViewStyle={{ opacity: 0.99 }}
-        />
-        <View pointerEvents="none" style={styles.titleBlurBar} />
-      </View>
-
-      {/* Control Buttons */}
-      {!hideControls && (
-        <View style={styles.controls}>
-          <Pressable
-            disabled={!isReady}
-            onPress={handleTogglePlay}
-            style={[
-              styles.controlButton,
-              !isReady && styles.controlButtonDisabled,
-            ]}
-          >
-            <Text style={styles.buttonText}>
-              {!isReady ? '...' : playing ? 'PAUSE' : 'PLAY'}
-            </Text>
-          </Pressable>
-
-          <Pressable
-            disabled={!isReady}
-            onPress={handleReplay}
-            style={[
-              styles.controlButton,
-              !isReady && styles.controlButtonDisabled,
-            ]}
-          >
-            <Text style={styles.buttonText}>REPLAY</Text>
-          </Pressable>
+        <View style={{ marginTop: -TITLE_CLIP }}>
+          <YoutubeIframe
+            allowWebViewZoom={false}
+            forceAndroidAutoplay={true}
+            height={videoHeight}
+            initialPlayerParams={{
+              color: 'white',
+              controls: false,
+              end: playerEndTime,
+              iv_load_policy: 3,
+              modestbranding: true,
+              preventFullScreen: false,
+              rel: false,
+              start: startTime,
+            }}
+            key={`${videoId}-${startTime}-${endTime}`}
+            onChangeState={handleStateChange}
+            onError={handleError}
+            onReady={handleReady}
+            play={playing}
+            ref={playerRef}
+            videoId={videoId}
+            webViewProps={{
+              allowsLinkPreview: false,
+              androidLayerType:
+                Platform.OS === 'android' ? 'hardware' : undefined,
+              bounces: false,
+              mediaPlaybackRequiresUserAction:
+                Platform.OS === 'android' ? false : undefined,
+              onShouldStartLoadWithRequest: handleShouldStartLoad,
+              renderToHardwareTextureAndroid: true,
+              scrollEnabled: false,
+            }}
+            webViewStyle={{ opacity: 0.99 }}
+          />
         </View>
-      )}
+      </View>
     </View>
   );
 }
@@ -296,24 +273,7 @@ const styles = StyleSheet.create({
     fontSize: 18,
   },
   container: {
-    gap: 15,
     width: '100%',
-  },
-  controlButton: {
-    alignItems: 'center',
-    backgroundColor: '#FFD700',
-    borderColor: 'black',
-    borderRadius: 16,
-    borderWidth: 4,
-    flex: 1,
-    paddingVertical: 15,
-  },
-  controlButtonDisabled: {
-    opacity: 0.5,
-  },
-  controls: {
-    flexDirection: 'row',
-    gap: 10,
   },
   errorContainer: {
     alignItems: 'center',
@@ -347,19 +307,8 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingVertical: 12,
   },
-  titleBlurBar: {
-    backgroundColor: '#000',
-    height: 36,
-    left: 0,
-    position: 'absolute',
-    right: 0,
-    top: 0,
-  },
   videoWrapper: {
     backgroundColor: '#000',
-    borderColor: 'white',
-    borderRadius: 20,
-    borderWidth: 4,
     overflow: 'hidden',
     width: '100%',
   },

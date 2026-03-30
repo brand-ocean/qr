@@ -8,6 +8,7 @@ import {
   type Code,
 } from 'react-native-vision-camera';
 import { getVideoById } from 'src/data/videos.ts';
+import { parseCardIdFromScannedValue } from 'src/lib/parseCardId.ts';
 import Text from './Text.tsx';
 import ViralButton from './ViralButton.tsx';
 
@@ -15,25 +16,6 @@ type QRScannerProps = {
   readonly onClose: () => void;
   readonly onVideoFound: (videoId: string) => void;
 };
-
-function parseCardIdFromScannedValue(value: string): string | null {
-  const trimmedValue = value.trim();
-
-  const matchers = [
-    /^https?:\/\/(?:www\.)?viralsgame\.nl\/(kaart\d{4})(?:[#/?].*)?$/i,
-    /^viralsgame:\/\/(kaart\d{4})(?:[#/?].*)?$/i,
-    /^(?:www\.)?viralsgame\.nl\/(kaart\d{4})(?:[#/?].*)?$/i,
-  ];
-
-  for (const matcher of matchers) {
-    const match = trimmedValue.match(matcher);
-    if (match?.[1]) {
-      return match[1].toLowerCase();
-    }
-  }
-
-  return null;
-}
 
 export default function QRScanner({ onClose, onVideoFound }: QRScannerProps) {
   const device = useCameraDevice('back');

@@ -1,12 +1,15 @@
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 import { useLocalSearchParams, useRouter, type Href } from 'expo-router';
+import { useMemo, useRef, useState } from 'react';
 import {
-  lockAsync,
-  OrientationLock,
-  unlockAsync,
-} from 'expo-screen-orientation';
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { Image, StyleSheet, useWindowDimensions, View } from 'react-native';
+  Image,
+  Pressable,
+  StyleSheet,
+  useWindowDimensions,
+  View,
+} from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Path, Svg } from 'react-native-svg';
 import { useSettings } from 'src/context/SettingsContext.tsx';
 import { getVideoById, type VideoCard } from 'src/data/videos.ts';
 import SunburstBackground from 'src/ui/SunburstBackground.tsx';
@@ -20,22 +23,13 @@ import viralLogo from '../../../../../assets/images/virals-logo.png';
 const LOGO_ASPECT_RATIO = 1279 / 771;
 
 export default function VideoScreen() {
-  const { height, width } = useWindowDimensions();
-  const screenWidth = width;
-  const isLandscape = width > height;
+  const { width } = useWindowDimensions();
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const [isVideoPlaying, setIsVideoPlaying] = useState(false);
-  const [landscapeIsReady, setLandscapeIsReady] = useState(false);
-  const landscapeRef = useRef<YouTubePlayerHandle>(null);
+  const [isPlayerReady, setIsPlayerReady] = useState(false);
+  const playerRef = useRef<YouTubePlayerHandle>(null);
   const { setShowContentWarning, showContentWarning } = useSettings();
-
-  useEffect(() => {
-    unlockAsync();
-    return () => {
-      lockAsync(OrientationLock.PORTRAIT_UP);
-    };
-  }, []);
 
   const normalizedId = useMemo(() => {
     return id?.toLowerCase() ?? '';
@@ -59,21 +53,16 @@ export default function VideoScreen() {
     router.replace('/');
   };
 
-  const goHome = () => {
-    router.replace('/');
-  };
-
   if (error) {
     return (
       <View style={styles.container}>
-        <SunburstBackground />
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.errorCard}>
             <Text style={styles.errorText}>{error}</Text>
             <View style={styles.buttonGroup}>
               <ViralButton onPress={goBack} title="TERUG" variant="outline" />
               <ViralButton
-                onPress={goHome}
+                onPress={goBack}
                 title="NAAR HOME"
                 variant="primary"
               />
@@ -87,7 +76,6 @@ export default function VideoScreen() {
   if (!video) {
     return (
       <View style={styles.container}>
-        <SunburstBackground />
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.loadingCard}>
             <Text style={styles.loadingText}>Laden...</Text>
@@ -99,129 +87,120 @@ export default function VideoScreen() {
 
   const shouldShowWarning = video.contentWarning && showContentWarning;
 
-  const landscapeVideoHeight = height - 32;
-  const landscapeVideoWidth = landscapeVideoHeight * (16 / 9);
-
   return (
-    <View style={[styles.container, isLandscape && styles.containerLandscape]}>
-      {!isLandscape && <SunburstBackground paused={isVideoPlaying} />}
+    <View style={styles.container}>
+      <SunburstBackground paused />
+      <View style={styles.darkOverlay} />
       <SafeAreaView style={styles.safeArea}>
-        {isLandscape ? (
-          <View style={styles.landscapeLayout}>
-            <View
-              style={[
-                styles.landscapeVideoPanel,
-                { width: landscapeVideoWidth },
-              ]}
-            >
-              <YouTubePlayer
-                endTime={video.endTime}
-                hideControls={true}
-                onPlayStateChange={setIsVideoPlaying}
-                onReadyChange={setLandscapeIsReady}
-                ref={landscapeRef}
-                startTime={video.startTime}
-                videoId={video.videoId}
-              />
+        {/* Header hidden in landscape — kept in tree to preserve YouTubePlayer mount index */}
+        <View style={styles.headerHidden}>
+          <Image
+            resizeMode="contain"
+            source={viralLogo}
+            style={[styles.logo, { height: (width * 0.8) / LOGO_ASPECT_RATIO }]}
+          />
+        </View>
+
+        <View style={styles.mainLayout}>
+          {/* Video section */}
+          <View style={styles.videoSection}>
+            {shouldShowWarning ? (
+              <View style={styles.warningContainer}>
+                <Text style={styles.warningTitle}>Let op</Text>
+                <Text style={styles.warningText}>
+                  Deze kaart bevat mogelijk schokkende of beledigende inhoud.
+                  Door op doorgaan te klikken, zet je de waarschuwing voortaan
+                  uit. Je kunt dit altijd weer aanzetten via de spelregels.
+                </Text>
+                <ViralButton
+                  onPress={() => setShowContentWarning(false)}
+                  style={styles.fullWidthButton}
+                  title="DOORGAAN"
+                  variant="primary"
+                />
+                <ViralButton
+                  onPress={goBack}
+                  style={styles.fullWidthButton}
+                  title="TERUG"
+                  variant="outline"
+                />
+              </View>
+            ) : (
+              <View style={styles.videoFrame}>
+                <YouTubePlayer
+                  endTime={video.endTime}
+                  onPlayStateChange={setIsVideoPlaying}
+                  onReadyChange={setIsPlayerReady}
+                  ref={playerRef}
+                  startTime={video.startTime}
+                  videoId={video.videoId}
+                />
+              </View>
+            )}
+          </View>
+
+          {/* Button panel */}
+          <View style={styles.buttonPanel}>
+            <View style={styles.signalBars}>
+              <Svg height="30" viewBox="0 0 60 30" width="60">
+                <Path
+                  d="M 10 10 Q 30 0 50 10"
+                  fill="none"
+                  stroke="white"
+                  strokeLinecap="round"
+                  strokeWidth="4"
+                />
+                <Path
+                  d="M 20 23 Q 30 16 40 23"
+                  fill="none"
+                  stroke="white"
+                  strokeLinecap="round"
+                  strokeWidth="4"
+                />
+              </Svg>
             </View>
-            <View style={styles.landscapeButtonPanel}>
-              <ViralButton
-                disabled={!landscapeIsReady}
-                onPress={() => landscapeRef.current?.togglePlay()}
-                style={styles.fullWidthButton}
-                title={isVideoPlaying ? 'PAUSE' : 'PLAY'}
-                variant="secondary"
-              />
-              <ViralButton
-                disabled={!landscapeIsReady}
-                onPress={() => landscapeRef.current?.replay()}
-                style={styles.fullWidthButton}
-                title="REPLAY"
-                variant="secondary"
-              />
+            <View style={styles.buttonCard}>
               <ViralButton
                 onPress={() => router.push('/(app)/(tabs)/scanner' as Href)}
-                style={styles.fullWidthButton}
+                style={styles.compactButton}
                 title="SCAN KAART"
                 variant="primary"
               />
+              <View style={styles.playRow}>
+                <Pressable
+                  disabled={!isPlayerReady}
+                  onPress={() => playerRef.current?.togglePlay()}
+                  style={[
+                    styles.iconButton,
+                    !isPlayerReady && styles.iconButtonDisabled,
+                  ]}
+                >
+                  <Ionicons
+                    color="black"
+                    name={isVideoPlaying ? 'pause' : 'play'}
+                    size={26}
+                  />
+                </Pressable>
+                <Pressable
+                  disabled={!isPlayerReady}
+                  onPress={() => playerRef.current?.replay()}
+                  style={[
+                    styles.iconButton,
+                    !isPlayerReady && styles.iconButtonDisabled,
+                  ]}
+                >
+                  <MaterialIcons color="black" name="replay" size={26} />
+                </Pressable>
+              </View>
               <ViralButton
                 onPress={goBack}
-                style={styles.fullWidthButton}
+                style={styles.compactButton}
                 title="TERUG"
                 variant="outline"
               />
             </View>
           </View>
-        ) : (
-          <>
-            {!shouldShowWarning && (
-              <View style={styles.header}>
-                <Image
-                  resizeMode="contain"
-                  source={viralLogo}
-                  style={[
-                    styles.logo,
-                    { height: (screenWidth * 0.8) / LOGO_ASPECT_RATIO },
-                  ]}
-                />
-              </View>
-            )}
-            <View style={styles.cardContainer}>
-              <View style={styles.card}>
-                {shouldShowWarning ? (
-                  <View style={styles.warningContainer}>
-                    <Text style={styles.warningTitle}>Let op</Text>
-                    <Text style={styles.warningText}>
-                      Deze kaart bevat mogelijk schokkende of beledigende
-                      inhoud. Door op doorgaan te klikken, zet je de
-                      waarschuwing voortaan uit. Je kunt dit altijd weer
-                      aanzetten via de spelregels.
-                    </Text>
-                    <ViralButton
-                      onPress={() => setShowContentWarning(false)}
-                      style={styles.fullWidthButton}
-                      title="DOORGAAN"
-                      variant="primary"
-                    />
-                    <ViralButton
-                      onPress={goBack}
-                      style={styles.fullWidthButton}
-                      title="TERUG"
-                      variant="outline"
-                    />
-                  </View>
-                ) : (
-                  <>
-                    <YouTubePlayer
-                      endTime={video.endTime}
-                      onPlayStateChange={setIsVideoPlaying}
-                      startTime={video.startTime}
-                      videoId={video.videoId}
-                    />
-                    <Text style={styles.rotateHint}>
-                      ↻ Draai voor groter scherm
-                    </Text>
-                    <ViralButton
-                      onPress={() =>
-                        router.push('/(app)/(tabs)/scanner' as Href)
-                      }
-                      style={styles.fullWidthButton}
-                      title="SCAN NIEUWE KAART"
-                      variant="primary"
-                    />
-                    <ViralButton
-                      onPress={goBack}
-                      style={styles.fullWidthButton}
-                      title="TERUG"
-                      variant="outline"
-                    />
-                  </>
-                )}
-              </View>
-            </View>
-          </>
-        )}
+        </View>
       </SafeAreaView>
     </View>
   );
@@ -233,30 +212,36 @@ const styles = StyleSheet.create({
     maxWidth: 300,
     width: '100%',
   },
-  card: {
+  signalBars: {
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  buttonCard: {
     backgroundColor: 'white',
     borderColor: 'black',
-    borderRadius: 30,
-    borderWidth: 5,
-    elevation: 10,
-    gap: 16,
+    borderRadius: 20,
+    borderWidth: 4,
+    elevation: 8,
+    gap: 8,
     padding: 8,
     shadowColor: 'black',
-    shadowOffset: { height: 15, width: 15 },
+    shadowOffset: { height: 6, width: 6 },
     shadowOpacity: 0.8,
     shadowRadius: 0,
   },
-  cardContainer: {
-    flex: 1,
+  buttonPanel: {
     justifyContent: 'center',
-    paddingHorizontal: 8,
+    paddingLeft: 12,
+    paddingRight: 0,
+    width: 185,
   },
   container: {
     flex: 1,
     overflow: 'hidden',
   },
-  containerLandscape: {
-    backgroundColor: 'white',
+  darkOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.85)',
   },
   errorCard: {
     alignItems: 'center',
@@ -266,36 +251,42 @@ const styles = StyleSheet.create({
     padding: 20,
   },
   errorText: {
-    color: 'white',
+    color: 'black',
     fontFamily: 'AeonikFono-Bold',
     fontSize: 24,
     textAlign: 'center',
-    textShadowColor: '#000',
-    textShadowOffset: { height: 3, width: 3 },
-    textShadowRadius: 0,
+  },
+  compactButton: {
+    paddingHorizontal: 8,
+    width: '100%',
   },
   fullWidthButton: {
     width: '100%',
   },
-  header: {
+  iconButton: {
     alignItems: 'center',
-    marginBottom: 20,
-    marginTop: 80,
-    transform: [{ rotate: '-2deg' }],
-  },
-  landscapeButtonPanel: {
+    backgroundColor: '#FFD700',
+    borderColor: 'black',
+    borderRadius: 16,
+    borderWidth: 4,
+    elevation: 4,
     flex: 1,
-    gap: 12,
     justifyContent: 'center',
-    paddingHorizontal: 16,
+    paddingVertical: 10,
+    shadowColor: 'black',
+    shadowOffset: { height: 4, width: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
   },
-  landscapeLayout: {
-    flex: 1,
+  iconButtonDisabled: {
+    opacity: 0.5,
+  },
+  playRow: {
     flexDirection: 'row',
+    gap: 8,
   },
-  landscapeVideoPanel: {
-    alignSelf: 'stretch',
-    justifyContent: 'center',
+  headerHidden: {
+    display: 'none',
   },
   loadingCard: {
     alignItems: 'center',
@@ -303,25 +294,33 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   loadingText: {
-    color: 'white',
+    color: 'black',
     fontFamily: 'AeonikFono-Bold',
     fontSize: 24,
-    textShadowColor: '#000',
-    textShadowOffset: { height: 3, width: 3 },
-    textShadowRadius: 0,
   },
   logo: {
     width: '80%',
   },
-  rotateHint: {
-    color: '#888',
-    fontFamily: 'AeonikFono-Regular',
-    fontSize: 13,
-    textAlign: 'center',
+  mainLayout: {
+    flex: 1,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    paddingHorizontal: 12,
   },
   safeArea: {
     flex: 1,
     zIndex: 1,
+  },
+  videoFrame: {
+    alignSelf: 'stretch',
+    borderColor: 'white',
+    borderRadius: 4,
+    borderWidth: 4,
+    overflow: 'hidden',
+  },
+  videoSection: {
+    flex: 1,
+    justifyContent: 'center',
   },
   warningContainer: {
     alignItems: 'center',

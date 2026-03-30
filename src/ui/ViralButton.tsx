@@ -7,7 +7,7 @@ type ViralButtonProps = {
   readonly onPress: () => void;
   readonly style?: ViewStyle;
   readonly title: string;
-  readonly variant?: 'primary' | 'secondary' | 'outline';
+  readonly variant?: 'primary' | 'secondary' | 'outline' | 'outline-light';
 };
 
 export default function ViralButton({
@@ -30,6 +30,8 @@ export default function ViralButton({
         return styles.secondaryButton;
       case 'outline':
         return styles.outlineButton;
+      case 'outline-light':
+        return styles.outlineLightButton;
       default:
         return styles.primaryButton;
     }
@@ -43,6 +45,8 @@ export default function ViralButton({
         return styles.secondaryText;
       case 'outline':
         return styles.outlineText;
+      case 'outline-light':
+        return styles.outlineLightText;
       default:
         return styles.primaryText;
     }
@@ -114,6 +118,17 @@ const styles = StyleSheet.create({
     backgroundColor: 'transparent',
     borderColor: 'black',
     borderWidth: 4,
+  },
+  outlineLightButton: {
+    backgroundColor: 'transparent',
+    borderColor: 'white',
+    borderWidth: 4,
+  },
+  outlineLightText: {
+    color: 'white',
+    fontFamily: 'AeonikFono-Bold',
+    fontSize: 14,
+    textTransform: 'uppercase',
   },
   outlineText: {
     color: 'black',

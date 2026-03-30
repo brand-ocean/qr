@@ -24,7 +24,7 @@ export default function RootLayout() {
   });
 
   useEffect(() => {
-    lockAsync(OrientationLock.PORTRAIT_UP);
+    lockAsync(OrientationLock.LANDSCAPE);
   }, []);
 
   useEffect(() => {

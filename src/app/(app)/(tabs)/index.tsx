@@ -18,9 +18,11 @@ import viralLogo from '../../../../assets/images/virals-logo.png';
 const LOGO_ASPECT_RATIO = 1279 / 771;
 
 export default function GameScreen() {
-  const { width: screenWidth } = useWindowDimensions();
+  const { height } = useWindowDimensions();
   const router = useRouter();
   const [isRulesOpen, setIsRulesOpen] = useState(false);
+
+  const logoWidth = height * 0.75;
 
   const openRules = () => {
     playClickSound();
@@ -34,52 +36,58 @@ export default function GameScreen() {
 
   return (
     <View style={styles.container}>
-      {/* Sunburst Background */}
       <SunburstBackground />
 
       <SafeAreaView style={styles.safeArea}>
-        {/* Top Right Info Button */}
-        <View style={styles.topButtons}>
-          <Pressable onPress={openRules} style={styles.iconButton}>
-            <Text style={styles.iconText}>i</Text>
-          </Pressable>
-        </View>
-
-        {/* Header */}
-        <View style={styles.header}>
-          <Image
-            resizeMode="contain"
-            source={viralLogo}
-            style={[
-              styles.logo,
-              { height: (screenWidth * 0.8) / LOGO_ASPECT_RATIO },
-            ]}
-          />
-        </View>
-
-        {/* Main Card */}
-        <View style={styles.cardContainer}>
-          <View style={styles.card}>
-            <Text style={styles.emptyText}>
-              Scan een QR code op een kaart om de video te bekijken!
-            </Text>
-            <ViralButton
-              onPress={openScanner}
-              style={styles.fullWidthButton}
-              title="SCAN KAART"
-              variant="primary"
+        <View style={styles.layout}>
+          {/* Left panel — logo */}
+          <View style={styles.logoPanel}>
+            <Pressable
+              onPress={openRules}
+              style={[styles.iconButton, styles.logoPanelInfoButton]}
+            >
+              <Text style={styles.iconText}>i</Text>
+            </Pressable>
+            <Image
+              resizeMode="contain"
+              source={viralLogo}
+              style={[
+                styles.logo,
+                { height: logoWidth / LOGO_ASPECT_RATIO, width: logoWidth },
+              ]}
             />
+          </View>
+
+          {/* Right panel — card + action */}
+          <View style={styles.actionPanel}>
+            <View style={styles.card}>
+              <Text style={styles.emptyText}>
+                Scan een QR code op een kaart om de video te bekijken!
+              </Text>
+              <ViralButton
+                onPress={openScanner}
+                style={styles.fullWidthButton}
+                title="SCAN KAART"
+                variant="primary"
+              />
+            </View>
           </View>
         </View>
       </SafeAreaView>
 
-      {/* Modals */}
       <RulesModal onClose={() => setIsRulesOpen(false)} visible={isRulesOpen} />
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  actionPanel: {
+    flex: 1,
+    gap: 12,
+    justifyContent: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
   card: {
     backgroundColor: 'white',
     borderColor: 'black',
@@ -92,12 +100,6 @@ const styles = StyleSheet.create({
     shadowOffset: { height: 15, width: 15 },
     shadowOpacity: 0.8,
     shadowRadius: 0,
-  },
-  cardContainer: {
-    bottom: 20,
-    left: 20,
-    position: 'absolute',
-    right: 20,
   },
   container: {
     flex: 1,
@@ -112,12 +114,6 @@ const styles = StyleSheet.create({
   },
   fullWidthButton: {
     width: '100%',
-  },
-  header: {
-    alignItems: 'center',
-    flex: 1,
-    justifyContent: 'center',
-    transform: [{ rotate: '-2deg' }],
   },
   iconButton: {
     alignItems: 'center',
@@ -140,17 +136,25 @@ const styles = StyleSheet.create({
     fontSize: 20,
     lineHeight: 22,
   },
+  layout: {
+    flex: 1,
+    flexDirection: 'row',
+  },
   logo: {
-    width: '80%',
+    transform: [{ rotate: '-2deg' }],
+  },
+  logoPanel: {
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  logoPanelInfoButton: {
+    left: 12,
+    position: 'absolute',
+    top: 12,
   },
   safeArea: {
     flex: 1,
     zIndex: 1,
-  },
-  topButtons: {
-    position: 'absolute',
-    right: 20,
-    top: 60,
-    zIndex: 10,
   },
 });
