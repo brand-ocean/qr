@@ -1,4 +1,11 @@
 {
   "version": 1,
-  "entries": []
+  "entries": [
+    {
+      "cardId": "kaart0241",
+      "videoId": "ERROR",
+      "reason": "Error card — physical card printed by mistake, intentionally set to ERROR",
+      "addedOn": "2026-03-31"
+    }
+  ]
 }

@@ -2,7 +2,7 @@
  * Video data for the VIRALS Meme Editie app.
  *
  * This file is auto-generated from CSV source data.
- * Source: /Users/brandocean/Downloads/Virals Meme lijst - Blad1.csv
+ * Source: /Users/brandocean/Downloads/Virals Meme lijst Links 3-30-3.csv
  */
 
 export type VideoCard = {
@@ -1014,17 +1014,8 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 22,
-    id: 'kaart0111',
-    quote: 'Niet met de deuren slaan!',
-    startTime: 1,
-    videoId: 'qoIo4PA6xAo',
-    year: 1966,
-  },
-  {
-    contentWarning: false,
     endTime: 62,
-    id: 'kaart0112',
+    id: 'kaart0111',
     quote: 'Uithuilen en opnieuw beginnen',
     startTime: 41,
     videoId: 'HzY3thn7tBU',
@@ -1033,7 +1024,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 802,
-    id: 'kaart0113',
+    id: 'kaart0112',
     quote: 'Floepens mis',
     startTime: 781,
     videoId: 'raQnhdxcciA',
@@ -1042,7 +1033,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 62,
-    id: 'kaart0114',
+    id: 'kaart0113',
     quote: 'Broodje met beleg -> Staat er nou geen chips ofzo, of slagroom?',
     startTime: 37,
     videoId: '1wDBafQLXFI',
@@ -1051,7 +1042,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: true,
     endTime: 21,
-    id: 'kaart0115',
+    id: 'kaart0114',
     quote: 'Ossentong in madeirasaus -> Jan Smit Groepsapp',
     startTime: 0,
     videoId: 'NL9MHe4VpSY',
@@ -1060,7 +1051,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 36,
-    id: 'kaart0116',
+    id: 'kaart0115',
     quote: 'Ik heb de scheidsrechter bijna getackeld -> You can dance',
     startTime: 14,
     videoId: 'AYHhiil6Gig',
@@ -1069,7 +1060,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0117',
+    id: 'kaart0116',
     quote: 'Waarom lieg je tegen mij?',
     startTime: 0,
     videoId: 'gIKsxp0mQcA',
@@ -1078,7 +1069,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 22,
-    id: 'kaart0118',
+    id: 'kaart0117',
     quote: 'Burgemeester, wat is er nou zo bijzonder aan sail kampen?',
     startTime: 1,
     videoId: 'TrdUDA0GMQc',
@@ -1087,7 +1078,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 21,
-    id: 'kaart0119',
+    id: 'kaart0118',
     quote: 'Ik ben Ufo-piloot',
     startTime: 0,
     videoId: 'ms7Mi5jpwi4',
@@ -1096,7 +1087,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 36,
-    id: 'kaart0120',
+    id: 'kaart0119',
     quote: 'Wat zijn we ziek geprankt',
     startTime: 17,
     videoId: 'N2v7O-IcyuM',
@@ -1105,7 +1096,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0121',
+    id: 'kaart0120',
     quote: 'Bakvet -> Mozes kriebel',
     startTime: 31,
     videoId: 'dYn73sIMUJY',
@@ -1114,7 +1105,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 20,
-    id: 'kaart0122',
+    id: 'kaart0121',
     quote: 'Ik ben dik',
     startTime: 0,
     videoId: 'jjnyiELx20w',
@@ -1123,7 +1114,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 21,
-    id: 'kaart0123',
+    id: 'kaart0122',
     quote: 'Freerunner Dennis - Lang Leve de Liefde',
     startTime: 0,
     videoId: 'QTxuz8neMaA',
@@ -1132,7 +1123,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0124',
+    id: 'kaart0123',
     quote: 'Yogi in de avond -> Volg mij voor humor met inhoud',
     startTime: 0,
     videoId: 'FufVrynM2-U',
@@ -1141,7 +1132,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 23,
-    id: 'kaart0125',
+    id: 'kaart0124',
     quote: 'De een zegt geld, de ander money, maar wij zeggen poen',
     startTime: 2,
     videoId: '8ABOPpSU5aI',
@@ -1150,7 +1141,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 20,
-    id: 'kaart0126',
+    id: 'kaart0125',
     quote: 'Schone messen',
     startTime: 0,
     videoId: 'HbtRVdHoXM4',
@@ -1159,7 +1150,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0127',
+    id: 'kaart0126',
     quote: 'New York, Manhattan',
     startTime: 9,
     videoId: 'JFK5-BaIJ7Y',
@@ -1168,7 +1159,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0128',
+    id: 'kaart0127',
     quote: 'Handtekening (kukeleku)',
     startTime: 3,
     videoId: 'EcX9IIqugKY',
@@ -1177,7 +1168,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0129',
+    id: 'kaart0128',
     quote: 'Donker, liefde zwart en duisternis -->Heb jij dan snuif?',
     startTime: 0,
     videoId: 'hv77-T2PVLE',
@@ -1186,7 +1177,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 31,
-    id: 'kaart0130',
+    id: 'kaart0129',
     quote: 'Toeter, toeter, toeter,toeter,toeter met Romana op de scooter',
     startTime: 9,
     videoId: '-dn7FtPVvoA',
@@ -1195,7 +1186,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 22,
-    id: 'kaart0131',
+    id: 'kaart0130',
     quote: 'Vrienden, vrienden, ik ben geen Chinees',
     startTime: 1,
     videoId: 'PBOTZrd0prQ',
@@ -1204,7 +1195,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 86,
-    id: 'kaart0132',
+    id: 'kaart0131',
     quote: 'Dááááár is de koffie!',
     startTime: 65,
     videoId: 'oZX8JRNbzvA',
@@ -1213,7 +1204,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0133',
+    id: 'kaart0132',
     quote: 'Interessant, heel interessant -> Hamvraag',
     startTime: 0,
     videoId: '9qP2yTfR-98',
@@ -1222,7 +1213,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0134',
+    id: 'kaart0133',
     quote: 'Ik word niet goed',
     startTime: 78,
     videoId: 'ZwVNddpa8J0',
@@ -1231,7 +1222,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0135',
+    id: 'kaart0134',
     quote: 'Oh my god, my shayla -> Postbode Siemen',
     startTime: 0,
     videoId: 'F9_ZZ8I8ODA',
@@ -1240,7 +1231,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 36,
-    id: 'kaart0136',
+    id: 'kaart0135',
     quote: 'Mikey Tikey',
     startTime: 15,
     videoId: 'PmPUA7BQdwI',
@@ -1249,7 +1240,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 26,
-    id: 'kaart0137',
+    id: 'kaart0136',
     quote: 'Wait a minute, who are you? -> Godmiljaar',
     startTime: 5,
     videoId: '4N6F5aBbbHw',
@@ -1258,7 +1249,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 0,
-    id: 'kaart0138',
+    id: 'kaart0137',
     quote: 'Apparently -> Alles is weg',
     startTime: 0,
     videoId: '8UMbjXVRp_o',
@@ -1267,7 +1258,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 312,
-    id: 'kaart0139',
+    id: 'kaart0138',
     quote: 'Okeh (XD) -> Bij iedere club waar ik was...',
     startTime: 289,
     videoId: 'xmZKUKYkzwo',
@@ -1276,11 +1267,20 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   {
     contentWarning: false,
     endTime: 144,
-    id: 'kaart0140',
+    id: 'kaart0139',
     quote: 'Een liga -> Zo stoned als een garnaal',
     startTime: 123,
     videoId: 'Yq54Ztq7ckY',
     year: 1975,
+  },
+  {
+    contentWarning: false,
+    endTime: 22,
+    id: 'kaart0140',
+    quote: 'Niet met de deuren slaan!',
+    startTime: 1,
+    videoId: 'qoIo4PA6xAo',
+    year: 1966,
   },
   {
     contentWarning: false,
@@ -1439,7 +1439,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 120,
+    endTime: 130,
     id: 'kaart0158',
     quote: 'Werner de walvis met watervrees -> Oant moarn, tot morgen',
     startTime: 110,
@@ -1714,7 +1714,7 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
     id: 'kaart0188',
     quote: 'Twee motten',
     startTime: 55,
-    videoId: 'k7gTnj3fru0',
+    videoId: 'iS_-9s_wXGY',
     year: 1957,
   },
   {
@@ -2190,6 +2190,15 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
     startTime: 17,
     videoId: 'RuzM9rxLPHA',
     year: 2007,
+  },
+  {
+    contentWarning: false,
+    endTime: 0,
+    id: 'kaart0241',
+    quote: 'ERROR KAART',
+    startTime: 0,
+    videoId: 'ERROR',
+    year: 0,
   },
 ] as const;
 
