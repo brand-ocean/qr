@@ -104,6 +104,7 @@ function homepageHtml(): string {
 
 function fallbackHtml(cardId: string, _platform: Platform, _env: Env): string {
   const escapedCardId = cardId.replaceAll(/[^\da-z]/gi, '');
+  const deepLink = `viralsgame://${escapedCardId}`;
 
   return `<!doctype html>
 <html lang="nl">
@@ -122,6 +123,11 @@ function fallbackHtml(cardId: string, _platform: Platform, _env: Env): string {
         <a class="primary" href="https://avondmakers.nl/products/virals-meme-editie">Pre-order</a>
       </div>
     </div>
+    <script>
+      setTimeout(() => {
+        window.location.href = '${deepLink}';
+      }, 120);
+    </script>
   </body>
 </html>`;
 }
