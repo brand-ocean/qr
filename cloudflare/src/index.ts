@@ -51,7 +51,7 @@ const SHARED_STYLES = `
   @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
   .card { position: relative; z-index: 1; width: 100%; max-width: 520px; background: #111; border-radius: 16px; padding: 20px; box-sizing: border-box; }
   h1 { margin: 0 0 12px; }
-  p { line-height: 1.5; }
+  p { line-height: 1.5; text-align: center; }
   .buttons { display: grid; gap: 12px; margin-top: 16px; }
   a { display: block; text-decoration: none; font-weight: 700; text-align: center; border-radius: 10px; padding: 12px; }
   .primary { background: #FFCC00; color: #000; }
