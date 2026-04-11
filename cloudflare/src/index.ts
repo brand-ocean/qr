@@ -56,7 +56,29 @@ const SHARED_STYLES = `
   a { display: block; text-decoration: none; font-weight: 700; text-align: center; border-radius: 10px; padding: 12px; }
   .primary { background: #FFCC00; color: #000; }
   .secondary { background: #fff; color: #111; }
+  .logo { width: 100%; max-width: 320px; height: auto; display: block; margin: 0 auto 16px; }
 `;
+
+type Platform = 'ios' | 'android' | 'unknown';
+
+function detectPlatform(request: Request): Platform {
+  const ua = request.headers.get('User-Agent') ?? '';
+  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
+  if (/Android/i.test(ua)) return 'android';
+  return 'unknown';
+}
+
+function storeButtons(platform: Platform, env: Env): string {
+  if (platform === 'ios') {
+    return `<a class="secondary" href="${env.APP_STORE_URL}">Download op iPhone</a>`;
+  }
+  if (platform === 'android') {
+    return `<a class="secondary" href="${env.PLAY_STORE_URL}">Download op Android</a>`;
+  }
+  return `
+    <a class="secondary" href="${env.APP_STORE_URL}">Download op iPhone</a>
+    <a class="secondary" href="${env.PLAY_STORE_URL}">Download op Android</a>`;
+}
 
 function homepageHtml(): string {
   return `<!doctype html>
@@ -70,7 +92,7 @@ function homepageHtml(): string {
   <body>
     <div id="sunburst"></div>
     <div class="card">
-      <h1>Virals Game</h1>
+      <img class="logo" src="/virals-logo.png" alt="Virals Meme Editie" />
       <p>Pre-order nu het virale meme kaartspel en speel het samen met vrienden.</p>
       <div class="buttons">
         <a class="primary" href="https://avondmakers.nl/products/virals-meme-editie">Pre-order</a>
@@ -80,8 +102,9 @@ function homepageHtml(): string {
 </html>`;
 }
 
-function fallbackHtml(cardId: string): string {
+function fallbackHtml(cardId: string, platform: Platform, env: Env): string {
   const escapedCardId = cardId.replaceAll(/[^\da-z]/gi, '');
+  const deepLink = `viralsgame://${escapedCardId}`;
 
   return `<!doctype html>
 <html lang="nl">
@@ -94,19 +117,25 @@ function fallbackHtml(cardId: string): string {
   <body>
     <div id="sunburst"></div>
     <div class="card">
-      <h1>Pre-order nu het spel</h1>
+      <h1>Open Virals Game</h1>
       <p>Kaart: <strong>${escapedCardId}</strong></p>
-      <p>Je hebt een kaart gescand van Virals Game. Pre-order nu jouw eigen set!</p>
+      <p>Als de app is geïnstalleerd, wordt deze automatisch geopend. Zo niet, installeer de app via een store hieronder.</p>
       <div class="buttons">
-        <a class="primary" href="https://avondmakers.nl/products/virals-meme-editie">Pre-order</a>
+        <a class="primary" href="${deepLink}">Open App</a>
+        ${storeButtons(platform, env)}
       </div>
     </div>
+    <script>
+      setTimeout(() => {
+        window.location.href = '${deepLink}';
+      }, 120);
+    </script>
   </body>
 </html>`;
 }
 
 export default {
-  async fetch(request: Request, _env: Env): Promise<Response> {
+  async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
 
@@ -143,7 +172,7 @@ export default {
     const match = pathname.match(/^\/(kaart\d{4})$/i);
     if (match?.[1]) {
       return new Response(
-        fallbackHtml(match[1].toLowerCase()),
+        fallbackHtml(match[1].toLowerCase(), detectPlatform(request), env),
         {
           headers: {
             'Cache-Control': 'no-store',

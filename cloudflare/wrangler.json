@@ -3,6 +3,9 @@
   "name": "viralsgame",
   "main": "src/index.ts",
   "compatibility_date": "2026-02-17",
+  "assets": {
+    "directory": "./public"
+  },
   "routes": [
     { "pattern": "viralsgame.nl/*", "zone_name": "viralsgame.nl" },
     { "pattern": "www.viralsgame.nl/*", "zone_name": "viralsgame.nl" }
