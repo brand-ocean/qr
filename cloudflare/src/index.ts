@@ -102,9 +102,8 @@ function homepageHtml(): string {
 </html>`;
 }
 
-function fallbackHtml(cardId: string, platform: Platform, env: Env): string {
+function fallbackHtml(cardId: string, _platform: Platform, _env: Env): string {
   const escapedCardId = cardId.replaceAll(/[^\da-z]/gi, '');
-  const deepLink = `viralsgame://${escapedCardId}`;
 
   return `<!doctype html>
 <html lang="nl">
@@ -117,19 +116,12 @@ function fallbackHtml(cardId: string, platform: Platform, env: Env): string {
   <body>
     <div id="sunburst"></div>
     <div class="card">
-      <h1>Open Virals Game</h1>
-      <p>Kaart: <strong>${escapedCardId}</strong></p>
-      <p>Als de app is geïnstalleerd, wordt deze automatisch geopend. Zo niet, installeer de app via een store hieronder.</p>
+      <img class="logo" src="/virals-logo.png" alt="Virals Meme Editie" />
+      <p>Je hebt een kaart gescand van Virals Game. Pre-order nu jouw eigen set!</p>
       <div class="buttons">
-        <a class="primary" href="${deepLink}">Open App</a>
-        ${storeButtons(platform, env)}
+        <a class="primary" href="https://avondmakers.nl/products/virals-meme-editie">Pre-order</a>
       </div>
     </div>
-    <script>
-      setTimeout(() => {
-        window.location.href = '${deepLink}';
-      }, 120);
-    </script>
   </body>
 </html>`;
 }
