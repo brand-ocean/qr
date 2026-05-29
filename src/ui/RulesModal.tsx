@@ -21,6 +21,7 @@ export default function RulesModal({ onClose, visible }: RulesModalProps) {
     <Modal
       animationType="fade"
       onRequestClose={handleClose}
+      supportedOrientations={['landscape', 'landscape-left', 'landscape-right']}
       transparent
       visible={visible}
     >

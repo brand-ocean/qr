@@ -2,7 +2,7 @@
   "expo": {
     "name": "Virals Game",
     "slug": "viralsgame",
-    "version": "1.0.0",
+    "version": "1.0.1",
     "scheme": "viralsgame",
     "plugins": [
       "expo-router",
@@ -75,6 +75,7 @@
       "infoPlist": {
         "ITSAppUsesNonExemptEncryption": false,
         "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to scan QR codes on game cards.",
+        "NSLocationWhenInUseUsageDescription": "Deze app gebruikt geen locatiegegevens.",
         "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to record audio for video."
       }
     },
