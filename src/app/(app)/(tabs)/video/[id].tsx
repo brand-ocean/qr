@@ -194,6 +194,16 @@ export default function VideoScreen() {
                     size={26}
                   />
                 </Pressable>
+                <Pressable
+                  disabled={!isPlayerReady}
+                  onPress={() => playerRef.current?.replay()}
+                  style={[
+                    styles.iconButton,
+                    !isPlayerReady && styles.iconButtonDisabled,
+                  ]}
+                >
+                  <MaterialIcons color="black" name="replay" size={26} />
+                </Pressable>
               </View>
               <ViralButton
                 onPress={goBack}
@@ -204,19 +214,6 @@ export default function VideoScreen() {
             </View>
           </View>
         </View>
-
-        {!shouldShowWarning && !videoError && (
-          <Pressable
-            disabled={!isPlayerReady}
-            onPress={() => playerRef.current?.replay()}
-            style={[
-              styles.replayButton,
-              !isPlayerReady && styles.iconButtonDisabled,
-            ]}
-          >
-            <MaterialIcons color="black" name="replay" size={20} />
-          </Pressable>
-        )}
       </SafeAreaView>
     </View>
   );
@@ -347,25 +344,6 @@ const styles = StyleSheet.create({
   playRow: {
     flexDirection: 'row',
     gap: 8,
-  },
-  replayButton: {
-    alignItems: 'center',
-    backgroundColor: '#FFD700',
-    borderColor: 'black',
-    borderRadius: 12,
-    borderWidth: 3,
-    elevation: 4,
-    height: 40,
-    justifyContent: 'center',
-    position: 'absolute',
-    right: 12,
-    shadowColor: 'black',
-    shadowOffset: { height: 3, width: 3 },
-    shadowOpacity: 1,
-    shadowRadius: 0,
-    top: 12,
-    width: 40,
-    zIndex: 10,
   },
   safeArea: {
     flex: 1,
