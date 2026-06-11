@@ -258,11 +258,10 @@ function checkReportText(
 }
 
 async function handleManualVideosCheck(
-  request: Request,
   env: Env,
+  key: string,
+  mailed: boolean,
 ): Promise<Response> {
-  const url = new URL(request.url);
-  const key = url.searchParams.get('key') ?? '';
   if (!env.TRIGGER_KEY || key !== env.TRIGGER_KEY) {
     return new Response('Unauthorized', { status: 401 });
   }
@@ -329,7 +328,6 @@ async function handleManualVideosCheck(
         ? `❌ Virals: 1 video werkt niet`
         : `❌ Virals: ${broken.length} video's werken niet`;
 
-  const mailed = url.searchParams.get('mail') === '1';
   if (mailed) {
     await sendReportMail(env, subject, text);
   }
@@ -346,7 +344,7 @@ async function handleManualVideosCheck(
         `<li><strong>${escapeHtml(failure.cardId)}</strong> — <a class="link" href="https://www.youtube.com/watch?v=${escapeHtml(failure.videoId)}">${escapeHtml(failure.videoId)}</a> (HTTP ${failure.status})</li>`,
     )
     .join('');
-  const mailUrl = `/internal/videos-check?key=${encodeURIComponent(key)}&mail=1`;
+  const mailUrl = `/check/${encodeURIComponent(key)}/mail`;
 
   const page = `<!doctype html>
 <html lang="nl">
@@ -396,8 +394,21 @@ export default {
       return handleVideosReport(request, env);
     }
 
+    const checkMatch = pathname.match(/^\/check\/([\w-]+)(\/mail)?$/);
+    if (checkMatch?.[1] && request.method === 'GET') {
+      return handleManualVideosCheck(
+        env,
+        checkMatch[1],
+        checkMatch[2] !== undefined,
+      );
+    }
+
     if (pathname === '/internal/videos-check' && request.method === 'GET') {
-      return handleManualVideosCheck(request, env);
+      return handleManualVideosCheck(
+        env,
+        url.searchParams.get('key') ?? '',
+        url.searchParams.get('mail') === '1',
+      );
     }
 
     if (pathname === '/') {
