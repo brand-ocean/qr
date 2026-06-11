@@ -82,6 +82,7 @@ export default function YouTubePlayerComponent({
   const [isReady, setIsReady] = useState(false);
   const [containerWidth, setContainerWidth] = useState(0);
   const playerRef = useRef<YoutubeIframeRef>(null);
+  const endedRef = useRef(false);
 
   const handleLayout = useCallback((event: LayoutChangeEvent) => {
     setContainerWidth(event.nativeEvent.layout.width);
@@ -94,6 +95,7 @@ export default function YouTubePlayerComponent({
   // stale onReadyChange(false) after the new player has already fired onReady.
   useEffect(() => {
     const timer = setTimeout(() => {
+      endedRef.current = false;
       setPlaying(false);
       setIsReady(false);
       onPlayStateChange?.(false);
@@ -102,9 +104,34 @@ export default function YouTubePlayerComponent({
     return () => clearTimeout(timer);
   }, [videoId, onPlayStateChange, onReadyChange]);
 
+  // The YouTube `end` player param only applies to the first play-through:
+  // after a seekTo (replay) the player ignores it and plays past the end
+  // time, so the clip boundary has to be enforced here.
+  useEffect(() => {
+    if (!playing || endTime <= 0) {
+      return;
+    }
+    const interval = setInterval(() => {
+      playerRef.current
+        ?.getCurrentTime()
+        .then((currentTime) => {
+          if (currentTime >= endTime) {
+            endedRef.current = true;
+            setPlaying(false);
+            onPlayStateChange?.(false);
+          }
+        })
+        .catch(() => {
+          // WebView may not be ready yet; the next tick retries.
+        });
+    }, 250);
+    return () => clearInterval(interval);
+  }, [playing, endTime, onPlayStateChange]);
+
   const handleStateChange = useCallback(
     (state: string) => {
       if (state === 'ended') {
+        endedRef.current = true;
         setPlaying(false);
         onPlayStateChange?.(false);
         return;
@@ -149,6 +176,7 @@ export default function YouTubePlayerComponent({
 
   const handleReplay = useCallback(async () => {
     playClickSound();
+    endedRef.current = false;
     if (playerRef.current) {
       await playerRef.current.seekTo(startTime, true);
     }
@@ -160,13 +188,19 @@ export default function YouTubePlayerComponent({
   const handleTogglePlay = useCallback(async () => {
     playClickSound();
     const newState = !playing;
+    if (newState && playerRef.current) {
+      if (endedRef.current) {
+        // After the clip ended, play restarts from the beginning.
+        endedRef.current = false;
+        await playerRef.current.seekTo(startTime, true);
+      } else {
+        const currentTime = await playerRef.current.getCurrentTime();
+        await playerRef.current.seekTo(currentTime, true);
+      }
+    }
     setPlaying(newState);
     onPlayStateChange?.(newState);
-    if (newState && playerRef.current) {
-      const currentTime = await playerRef.current.getCurrentTime();
-      await playerRef.current.seekTo(currentTime, true);
-    }
-  }, [playing, onPlayStateChange]);
+  }, [playing, startTime, onPlayStateChange]);
 
   useImperativeHandle(
     ref,

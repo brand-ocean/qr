@@ -194,16 +194,6 @@ export default function VideoScreen() {
                     size={26}
                   />
                 </Pressable>
-                <Pressable
-                  disabled={!isPlayerReady}
-                  onPress={() => playerRef.current?.replay()}
-                  style={[
-                    styles.iconButton,
-                    !isPlayerReady && styles.iconButtonDisabled,
-                  ]}
-                >
-                  <MaterialIcons color="black" name="replay" size={26} />
-                </Pressable>
               </View>
               <ViralButton
                 onPress={goBack}
@@ -214,21 +204,25 @@ export default function VideoScreen() {
             </View>
           </View>
         </View>
+
+        {!shouldShowWarning && !videoError && (
+          <Pressable
+            disabled={!isPlayerReady}
+            onPress={() => playerRef.current?.replay()}
+            style={[
+              styles.replayButton,
+              !isPlayerReady && styles.iconButtonDisabled,
+            ]}
+          >
+            <MaterialIcons color="black" name="replay" size={20} />
+          </Pressable>
+        )}
       </SafeAreaView>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  buttonGroup: {
-    gap: 16,
-    maxWidth: 300,
-    width: '100%',
-  },
-  signalBars: {
-    alignItems: 'center',
-    marginBottom: 2,
-  },
   buttonCard: {
     backgroundColor: 'white',
     borderColor: 'black',
@@ -242,11 +236,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.8,
     shadowRadius: 0,
   },
+  buttonGroup: {
+    gap: 16,
+    maxWidth: 300,
+    width: '100%',
+  },
   buttonPanel: {
     justifyContent: 'center',
     paddingLeft: 12,
     paddingRight: 0,
     width: 185,
+  },
+  compactButton: {
+    paddingHorizontal: 8,
+    width: '100%',
   },
   container: {
     flex: 1,
@@ -269,12 +272,11 @@ const styles = StyleSheet.create({
     fontSize: 24,
     textAlign: 'center',
   },
-  compactButton: {
-    paddingHorizontal: 8,
-    width: '100%',
-  },
   fullWidthButton: {
     width: '100%',
+  },
+  headerHidden: {
+    display: 'none',
   },
   iconButton: {
     alignItems: 'center',
@@ -294,13 +296,6 @@ const styles = StyleSheet.create({
   iconButtonDisabled: {
     opacity: 0.5,
   },
-  playRow: {
-    flexDirection: 'row',
-    gap: 8,
-  },
-  headerHidden: {
-    display: 'none',
-  },
   loadingCard: {
     alignItems: 'center',
     flex: 1,
@@ -319,21 +314,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     overflow: 'hidden',
     paddingHorizontal: 12,
-  },
-  safeArea: {
-    flex: 1,
-    zIndex: 1,
-  },
-  videoFrame: {
-    alignSelf: 'stretch',
-    borderColor: 'white',
-    borderRadius: 4,
-    borderWidth: 4,
-    overflow: 'hidden',
-  },
-  videoSection: {
-    flex: 1,
-    justifyContent: 'center',
   },
   noticeCard: {
     alignItems: 'center',
@@ -363,5 +343,47 @@ const styles = StyleSheet.create({
     color: 'black',
     fontFamily: 'AeonikFono-Black',
     fontSize: 22,
+  },
+  playRow: {
+    flexDirection: 'row',
+    gap: 8,
+  },
+  replayButton: {
+    alignItems: 'center',
+    backgroundColor: '#FFD700',
+    borderColor: 'black',
+    borderRadius: 12,
+    borderWidth: 3,
+    elevation: 4,
+    height: 40,
+    justifyContent: 'center',
+    position: 'absolute',
+    right: 12,
+    shadowColor: 'black',
+    shadowOffset: { height: 3, width: 3 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    top: 12,
+    width: 40,
+    zIndex: 10,
+  },
+  safeArea: {
+    flex: 1,
+    zIndex: 1,
+  },
+  signalBars: {
+    alignItems: 'center',
+    marginBottom: 2,
+  },
+  videoFrame: {
+    alignSelf: 'stretch',
+    borderColor: 'white',
+    borderRadius: 4,
+    borderWidth: 4,
+    overflow: 'hidden',
+  },
+  videoSection: {
+    flex: 1,
+    justifyContent: 'center',
   },
 });
