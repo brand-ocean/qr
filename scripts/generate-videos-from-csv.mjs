@@ -3,8 +3,8 @@ import fs from 'node:fs';
 import path from 'node:path';
 
 const DEFAULT_CSV_PATH =
-  '/Users/brandocean/Downloads/Virals Meme lijst Links 3-30-3.csv';
-const MAX_CARD_NUMBER = 241;
+  '/Users/brandocean/Downloads/Virals Meme lijst - MemeNL1.csv';
+const MAX_CARD_NUMBER = 275;
 const DEFAULT_OUTPUT_PATH = path.join(process.cwd(), 'src/data/videos.ts');
 
 function detectDelimiter(firstLine) {
@@ -146,7 +146,7 @@ function createVideosFile(videos) {
  * Video data for the VIRALS Meme Editie app.
  *
  * This file is auto-generated from CSV source data.
- * Source: /Users/brandocean/Downloads/Virals Meme lijst Links 3-30-3.csv
+ * Source: /Users/brandocean/Downloads/Virals Meme lijst - MemeNL1.csv
  */
 
 export type VideoCard = {

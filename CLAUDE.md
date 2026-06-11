@@ -42,7 +42,7 @@ pnpm videos:check
 ### Data Pipeline
 
 ```bash
-# Reads: /Users/brandocean/Downloads/Virals Meme lijst Links 3-30-3.csv
+# Reads: /Users/brandocean/Downloads/Virals Meme lijst - MemeNL1.csv
 # Writes: src/data/videos.ts
 pnpm videos:generate
 ```
@@ -98,13 +98,13 @@ pnpm videos:check
 ### Dataset Spot Check
 
 ```bash
-node --input-type=module -e "import { VIDEOS, getVideoById } from './src/data/videos.ts'; console.log('count', VIDEOS.length); console.log('has0001', !!getVideoById('kaart0001')); console.log('has0241', !!getVideoById('kaart0241'));"
+node --input-type=module -e "import { VIDEOS, getVideoById } from './src/data/videos.ts'; console.log('count', VIDEOS.length); console.log('has0001', !!getVideoById('kaart0001')); console.log('has0241', !!getVideoById('kaart0241')); console.log('has0275', !!getVideoById('kaart0275'));"
 ```
 
 Expected:
 
-- count is `241`
-- `kaart0001` and `kaart0241` are present
+- count is `267`
+- `kaart0001`, `kaart0241`, and `kaart0275` are present
 - `kaart0241` is the error card (`videoId: 'ERROR'`)
 
 ### QR / Deep Link Manual Checklist
