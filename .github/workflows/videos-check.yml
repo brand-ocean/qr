@@ -54,23 +54,45 @@ jobs:
         env:
           MAILER_TOKEN: ${{ secrets.VIDEOS_REPORT_MAILER_TOKEN }}
         run: |
-          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
-          if [ -f artifacts/videos-check-report.json ]; then
-            total=$(jq -r '.summary.totalChecked' artifacts/videos-check-report.json)
-            blocking=$(jq -r '.summary.blockingFailures' artifacts/videos-check-report.json)
-            if [ "${{ steps.videos_check.outcome }}" = "success" ]; then
-              subject="✅ Virals video-check: alle $total video's beschikbaar"
+          report=artifacts/videos-check-report.json
+          if [ -f "$report" ]; then
+            total=$(jq -r '.summary.totalChecked' "$report")
+            blocking=$(jq -r '.summary.blockingFailures' "$report")
+            stale=$(jq -r '.summary.staleAllowlistEntries' "$report")
+            allow=$(jq -r '[.allowlistedFailures[].cardId] | join(", ")' "$report")
+            if [ "$blocking" = "0" ]; then
+              subject="✅ Virals: alle $total video's werken"
+              body="Alles werkt. Alle $total video's zijn beschikbaar."
             else
-              subject="❌ Virals video-check: $blocking van $total video's niet beschikbaar"
-            fi
-            body=$(cat artifacts/videos-check-report.md)
-          else
-            subject="⚠️ Virals video-check: geen rapport gegenereerd"
-            body="De check kon geen rapport genereren."
-          fi
-          body="$body
+              if [ "$blocking" = "1" ]; then
+                subject="❌ Virals: 1 video werkt niet"
+                body="1 video werkt niet:"
+              else
+                subject="❌ Virals: $blocking video's werken niet"
+                body="$blocking video's werken niet:"
+              fi
+              body="$body
 
-          Volledige run: $run_url"
+          $(jq -r '.blockingFailures[] | "\(.cardId) → https://www.youtube.com/watch?v=\(.videoId) (\(.message))"' "$report")"
+            fi
+            if [ -n "$allow" ]; then
+              body="$body
+
+          Bewust genegeerd: $allow"
+            fi
+            if [ "$stale" != "0" ]; then
+              body="$body
+
+          Let op: $stale verouderde allowlist-regel(s) in config/videos-check-allowlist.json."
+            fi
+            body="$body
+
+          Gecontroleerd: $total kaarten."
+          else
+            subject="⚠️ Virals video-check kon niet draaien"
+            body="Er is geen rapport gegenereerd. Bekijk de run:
+          $GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          fi
           jq -n --arg subject "$subject" --arg text "$body" '{subject: $subject, text: $text}' \
             | curl -fsS -X POST "https://viralsgame.nl/internal/videos-report" \
                 -H "Authorization: Bearer $MAILER_TOKEN" \

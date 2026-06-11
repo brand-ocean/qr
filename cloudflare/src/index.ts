@@ -14,6 +14,7 @@ interface Env {
   EMAIL: EmailSender;
   REPORT_EMAIL_TO: string;
   MAILER_TOKEN?: string;
+  TRIGGER_KEY?: string;
 }
 
 const AASA = {
@@ -152,6 +153,24 @@ function escapeHtml(value: string): string {
     .replaceAll('>', '&gt;');
 }
 
+async function sendReportMail(
+  env: Env,
+  subject: string,
+  text: string,
+): Promise<void> {
+  const recipients = env.REPORT_EMAIL_TO.split(',')
+    .map((address) => address.trim())
+    .filter(Boolean);
+
+  await env.EMAIL.send({
+    to: recipients,
+    from: { email: 'rapport@viralsgame.nl', name: 'Virals Video Check' },
+    subject,
+    text,
+    html: `<pre style="font-family: ui-monospace, monospace; white-space: pre-wrap;">${escapeHtml(text)}</pre>`,
+  });
+}
+
 async function handleVideosReport(
   request: Request,
   env: Env,
@@ -172,24 +191,200 @@ async function handleVideosReport(
     return new Response('Missing subject or text', { status: 400 });
   }
 
-  const recipients = env.REPORT_EMAIL_TO.split(',')
-    .map((address) => address.trim())
-    .filter(Boolean);
+  await sendReportMail(env, payload.subject, payload.text);
 
-  const response = await env.EMAIL.send({
-    to: recipients,
-    from: { email: 'rapport@viralsgame.nl', name: 'Virals Video Check' },
-    subject: payload.subject,
-    text: payload.text,
-    html: `<pre style="font-family: ui-monospace, monospace; white-space: pre-wrap;">${escapeHtml(payload.text)}</pre>`,
+  return new Response(JSON.stringify({ ok: true }), {
+    headers: { 'Content-Type': 'application/json' },
   });
+}
 
-  return new Response(
-    JSON.stringify({ ok: true, messageId: response.messageId }),
-    {
-      headers: { 'Content-Type': 'application/json' },
-    },
+const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/brand-ocean/qr/main';
+const CHECK_CONCURRENCY = 20;
+
+interface CardVideo {
+  cardId: string;
+  videoId: string;
+}
+
+interface CardCheckFailure extends CardVideo {
+  allowlistReason?: string;
+  status: number;
+}
+
+function parseVideoCards(source: string): CardVideo[] {
+  const cards: CardVideo[] = [];
+  for (const match of source.matchAll(
+    /id: '(kaart\d{4})',[\s\S]*?videoId: '((?:[^'\\]|\\.)*)'/g,
+  )) {
+    cards.push({ cardId: match[1], videoId: match[2] });
+  }
+  return cards;
+}
+
+function oembedUrl(videoId: string): string {
+  const watchUrl = `https://www.youtube.com/watch?v=${videoId}`;
+  return `https://www.youtube.com/oembed?url=${encodeURIComponent(watchUrl)}&format=json`;
+}
+
+function checkReportText(
+  totalCards: number,
+  broken: ReadonlyArray<CardCheckFailure>,
+  allowlisted: ReadonlyArray<CardCheckFailure>,
+): string {
+  const lines: string[] = [];
+  if (broken.length === 0) {
+    lines.push(`Alles werkt. Alle ${totalCards} video's zijn beschikbaar.`);
+  } else {
+    lines.push(
+      broken.length === 1
+        ? `1 video werkt niet:`
+        : `${broken.length} video's werken niet:`,
+      '',
+    );
+    for (const failure of broken) {
+      lines.push(
+        `${failure.cardId} → https://www.youtube.com/watch?v=${failure.videoId} (HTTP ${failure.status})`,
+      );
+    }
+  }
+  if (allowlisted.length > 0) {
+    lines.push(
+      '',
+      `Bewust genegeerd: ${allowlisted.map((failure) => failure.cardId).join(', ')}`,
+    );
+  }
+  lines.push('', `Gecontroleerd: ${totalCards} kaarten.`);
+  return lines.join('\n');
+}
+
+async function handleManualVideosCheck(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const url = new URL(request.url);
+  const key = url.searchParams.get('key') ?? '';
+  if (!env.TRIGGER_KEY || key !== env.TRIGGER_KEY) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  const [videosResponse, allowlistResponse] = await Promise.all([
+    fetch(`${GITHUB_RAW_BASE}/src/data/videos.ts`),
+    fetch(`${GITHUB_RAW_BASE}/config/videos-check-allowlist.json`),
+  ]);
+  if (!videosResponse.ok || !allowlistResponse.ok) {
+    return new Response('Kon de kaartdata niet ophalen van GitHub.', {
+      status: 502,
+    });
+  }
+
+  const cards = parseVideoCards(await videosResponse.text());
+  const allowlist = (await allowlistResponse.json()) as {
+    entries?: ReadonlyArray<{
+      cardId: string;
+      reason?: string;
+      videoId: string;
+    }>;
+  };
+  const allowlistByKey = new Map(
+    (allowlist.entries ?? []).map((entry) => [
+      `${entry.cardId}|${entry.videoId}`,
+      entry.reason ?? 'allowlisted',
+    ]),
   );
+
+  const statuses: number[] = Array.from({ length: cards.length }, () => 0);
+  let nextIndex = 0;
+  const lane = async (): Promise<void> => {
+    while (nextIndex < cards.length) {
+      const index = nextIndex++;
+      try {
+        statuses[index] = (await fetch(oembedUrl(cards[index].videoId))).status;
+      } catch {
+        statuses[index] = -1;
+      }
+    }
+  };
+  await Promise.all(Array.from({ length: CHECK_CONCURRENCY }, lane));
+
+  const broken: CardCheckFailure[] = [];
+  const allowlisted: CardCheckFailure[] = [];
+  for (const [index, card] of cards.entries()) {
+    const status = statuses[index];
+    if (status === 200) continue;
+    const allowlistReason = allowlistByKey.get(
+      `${card.cardId}|${card.videoId}`,
+    );
+    if (allowlistReason === undefined) {
+      broken.push({ ...card, status });
+    } else {
+      allowlisted.push({ ...card, allowlistReason, status });
+    }
+  }
+
+  const text = checkReportText(cards.length, broken, allowlisted);
+  const subject =
+    broken.length === 0
+      ? `✅ Virals: alle ${cards.length} video's werken`
+      : broken.length === 1
+        ? `❌ Virals: 1 video werkt niet`
+        : `❌ Virals: ${broken.length} video's werken niet`;
+
+  const mailed = url.searchParams.get('mail') === '1';
+  if (mailed) {
+    await sendReportMail(env, subject, text);
+  }
+
+  const heading =
+    broken.length === 0
+      ? '✅ Alles werkt'
+      : broken.length === 1
+        ? '❌ 1 video werkt niet'
+        : `❌ ${broken.length} video's werken niet`;
+  const brokenList = broken
+    .map(
+      (failure) =>
+        `<li><strong>${escapeHtml(failure.cardId)}</strong> — <a class="link" href="https://www.youtube.com/watch?v=${escapeHtml(failure.videoId)}">${escapeHtml(failure.videoId)}</a> (HTTP ${failure.status})</li>`,
+    )
+    .join('');
+  const mailUrl = `/internal/videos-check?key=${encodeURIComponent(key)}&mail=1`;
+
+  const page = `<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <meta name="robots" content="noindex" />
+    <title>Virals video-check</title>
+    <style>${SHARED_STYLES}
+      ul { padding-left: 20px; line-height: 1.6; }
+      .link { display: inline; padding: 0; color: #FFCC00; }
+      .muted { opacity: 0.7; font-size: 14px; }
+    </style>
+  </head>
+  <body>
+    <div id="sunburst"></div>
+    <div class="card">
+      <h1>${heading}</h1>
+      ${broken.length > 0 ? `<ul>${brokenList}</ul>` : ''}
+      ${allowlisted.length > 0 ? `<p class="muted">Bewust genegeerd: ${escapeHtml(allowlisted.map((failure) => failure.cardId).join(', '))}</p>` : ''}
+      <p class="muted">Gecontroleerd: ${cards.length} kaarten.</p>
+      <div class="buttons">
+        ${
+          mailed
+            ? `<p>📧 Rapport gemaild naar ${escapeHtml(env.REPORT_EMAIL_TO)}</p>`
+            : `<a class="primary" href="${mailUrl}">Mail dit rapport</a>`
+        }
+      </div>
+    </div>
+  </body>
+</html>`;
+
+  return new Response(page, {
+    headers: {
+      'Cache-Control': 'no-store',
+      'Content-Type': 'text/html; charset=utf-8',
+    },
+  });
 }
 
 export default {
@@ -199,6 +394,10 @@ export default {
 
     if (pathname === '/internal/videos-report' && request.method === 'POST') {
       return handleVideosReport(request, env);
+    }
+
+    if (pathname === '/internal/videos-check' && request.method === 'GET') {
+      return handleManualVideosCheck(request, env);
     }
 
     if (pathname === '/') {
