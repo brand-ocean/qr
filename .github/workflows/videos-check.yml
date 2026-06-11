@@ -49,6 +49,34 @@ jobs:
             echo "No markdown report generated." >> "$GITHUB_STEP_SUMMARY"
           fi
 
+      - name: Email daily report
+        if: always() && (github.event_name == 'schedule' || github.event_name == 'workflow_dispatch')
+        env:
+          MAILER_TOKEN: ${{ secrets.VIDEOS_REPORT_MAILER_TOKEN }}
+        run: |
+          run_url="$GITHUB_SERVER_URL/$GITHUB_REPOSITORY/actions/runs/$GITHUB_RUN_ID"
+          if [ -f artifacts/videos-check-report.json ]; then
+            total=$(jq -r '.summary.totalChecked' artifacts/videos-check-report.json)
+            blocking=$(jq -r '.summary.blockingFailures' artifacts/videos-check-report.json)
+            if [ "${{ steps.videos_check.outcome }}" = "success" ]; then
+              subject="✅ Virals video-check: alle $total video's beschikbaar"
+            else
+              subject="❌ Virals video-check: $blocking van $total video's niet beschikbaar"
+            fi
+            body=$(cat artifacts/videos-check-report.md)
+          else
+            subject="⚠️ Virals video-check: geen rapport gegenereerd"
+            body="De check kon geen rapport genereren."
+          fi
+          body="$body
+
+          Volledige run: $run_url"
+          jq -n --arg subject "$subject" --arg text "$body" '{subject: $subject, text: $text}' \
+            | curl -fsS -X POST "https://viralsgame.nl/internal/videos-report" \
+                -H "Authorization: Bearer $MAILER_TOKEN" \
+                -H "Content-Type: application/json" \
+                --data @-
+
       - name: Upload report artifacts
         if: always()
         uses: actions/upload-artifact@v4

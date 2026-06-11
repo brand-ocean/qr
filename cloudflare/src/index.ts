@@ -1,6 +1,19 @@
+interface EmailSender {
+  send(message: {
+    to: string | string[];
+    from: { email: string; name?: string };
+    subject: string;
+    text: string;
+    html?: string;
+  }): Promise<{ messageId: string }>;
+}
+
 interface Env {
   APP_STORE_URL: string;
   PLAY_STORE_URL: string;
+  EMAIL: EmailSender;
+  REPORT_EMAIL_TO: string;
+  MAILER_TOKEN?: string;
 }
 
 const AASA = {
@@ -132,10 +145,61 @@ function fallbackHtml(cardId: string, _platform: Platform, _env: Env): string {
 </html>`;
 }
 
+function escapeHtml(value: string): string {
+  return value
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;');
+}
+
+async function handleVideosReport(
+  request: Request,
+  env: Env,
+): Promise<Response> {
+  const authorization = request.headers.get('Authorization') ?? '';
+  if (!env.MAILER_TOKEN || authorization !== `Bearer ${env.MAILER_TOKEN}`) {
+    return new Response('Unauthorized', { status: 401 });
+  }
+
+  let payload: { subject?: string; text?: string };
+  try {
+    payload = (await request.json()) as { subject?: string; text?: string };
+  } catch {
+    return new Response('Invalid JSON', { status: 400 });
+  }
+
+  if (typeof payload.subject !== 'string' || typeof payload.text !== 'string') {
+    return new Response('Missing subject or text', { status: 400 });
+  }
+
+  const recipients = env.REPORT_EMAIL_TO.split(',')
+    .map((address) => address.trim())
+    .filter(Boolean);
+
+  const response = await env.EMAIL.send({
+    to: recipients,
+    from: { email: 'rapport@viralsgame.nl', name: 'Virals Video Check' },
+    subject: payload.subject,
+    text: payload.text,
+    html: `<pre style="font-family: ui-monospace, monospace; white-space: pre-wrap;">${escapeHtml(payload.text)}</pre>`,
+  });
+
+  return new Response(
+    JSON.stringify({ ok: true, messageId: response.messageId }),
+    {
+      headers: { 'Content-Type': 'application/json' },
+    },
+  );
+}
+
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
+
+    if (pathname === '/internal/videos-report' && request.method === 'POST') {
+      return handleVideosReport(request, env);
+    }
 
     if (pathname === '/') {
       return new Response(homepageHtml(), {

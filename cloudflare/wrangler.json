@@ -10,8 +10,10 @@
     { "pattern": "viralsgame.nl/*", "zone_name": "viralsgame.nl" },
     { "pattern": "www.viralsgame.nl/*", "zone_name": "viralsgame.nl" }
   ],
+  "send_email": [{ "name": "EMAIL" }],
   "vars": {
     "APP_STORE_URL": "https://apps.apple.com/",
-    "PLAY_STORE_URL": "https://play.google.com/store/apps/details?id=nl.viralsgame.app"
+    "PLAY_STORE_URL": "https://play.google.com/store/apps/details?id=nl.viralsgame.app",
+    "REPORT_EMAIL_TO": "info@brandocean.nl"
   }
 }
