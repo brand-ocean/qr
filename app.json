@@ -67,6 +67,7 @@
     "assetBundlePatterns": ["**/*"],
     "ios": {
       "supportsTablet": true,
+      "requireFullScreen": true,
       "bundleIdentifier": "nl.viralsgame.app",
       "associatedDomains": [
         "applinks:viralsgame.nl",
