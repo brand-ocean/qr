@@ -328,8 +328,8 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
     endTime: 0,
     id: 'kaart0035',
     quote: 'Tuut tuut tuut, de groetjes van Ruud',
-    startTime: 0,
-    videoId: 'IjtdFUeUfIk',
+    startTime: 173,
+    videoId: '8g6S_6TLeDA',
     year: 1988,
   },
   {
@@ -469,11 +469,11 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 179,
+    endTime: 0,
     id: 'kaart0051',
     quote: 'Clown bassie die aan de macht was',
-    startTime: 158,
-    videoId: 'zrpcctsrAiE',
+    startTime: 0,
+    videoId: 'VBFRG1DMSf0',
     year: 2025,
   },
   {
@@ -1702,11 +1702,11 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 76,
+    endTime: 274,
     id: 'kaart0188',
     quote: 'Twee motten',
-    startTime: 55,
-    videoId: 'k7gTnj3fru0',
+    startTime: 254,
+    videoId: 'O5_HEBvXCFo',
     year: 1957,
   },
   {
@@ -1928,11 +1928,11 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 19,
+    endTime: 414,
     id: 'kaart0213',
     quote: 'Nou, ik heb liever een Nuts',
-    startTime: 0,
-    videoId: 'EGZyBVNRGpY',
+    startTime: 393,
+    videoId: 'T77yzIDsXeg',
     year: 1973,
   },
   {
