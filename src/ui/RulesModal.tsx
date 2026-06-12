@@ -28,34 +28,38 @@ export default function RulesModal({ onClose, visible }: RulesModalProps) {
       <View style={styles.overlay}>
         <View style={styles.modal}>
           <View style={styles.header}>
-            <Text style={styles.title}>HOE WERKT HET</Text>
+            <Text style={styles.title}>INFORMATIE</Text>
             <Pressable onPress={handleClose} style={styles.closeButton}>
               <Text style={styles.closeText}>×</Text>
             </Pressable>
           </View>
 
           <ScrollView style={styles.content}>
+            <Text style={styles.groupTitle}>Hoe werkt het spel</Text>
+
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>1. Pak een kaart</Text>
+              <Text style={styles.sectionTitle}>
+                Pak een kaart van de stapel
+              </Text>
               <Text style={styles.sectionText}>
-                Pak een willekeurige kaart uit het spel. Op elke kaart staat een
-                QR-code.
+                Pak een kaart zonder te kijken naar de achterkant met het
+                jaartal.
               </Text>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>2. Scan de QR-code</Text>
+              <Text style={styles.sectionTitle}>Scan de QR-code</Text>
               <Text style={styles.sectionText}>
-                Tik op SCAN KAART en richt de camera op de QR-code. De
-                bijbehorende video wordt automatisch geopend.
+                Tik op SCAN KAART en richt de camera op de QR-code. De video
+                opent automatisch.
               </Text>
             </View>
 
             <View style={styles.section}>
-              <Text style={styles.sectionTitle}>3. Bekijk de video</Text>
+              <Text style={styles.sectionTitle}>Bekijk de video</Text>
               <Text style={styles.sectionText}>
-                Tik op PLAY om de video te starten. Gebruik PAUSE om te pauzeren
-                en REPLAY om opnieuw te beginnen.
+                Klik op ▶ om de video te starten. Gebruik ❚❚ om te pauzeren of
+                ↻ om opnieuw te bekijken.
               </Text>
             </View>
 
@@ -64,9 +68,9 @@ export default function RulesModal({ onClose, visible }: RulesModalProps) {
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Inhoudswaarschuwing</Text>
               <Text style={styles.sectionText}>
-                Sommige kaarten bevatten mogelijk schokkende of beledigende
-                inhoud. Zet de waarschuwing aan om een melding te krijgen
-                voordat je zo&apos;n kaart bekijkt.
+                Sommige kaarten bevatten schokkende of beledigende inhoud. Zet
+                de waarschuwing aan om vóór het spelen van deze kaarten een
+                melding te krijgen.
               </Text>
               <View style={styles.toggleRow}>
                 <Text style={styles.sectionText}>Toon waarschuwing</Text>
@@ -100,6 +104,13 @@ const styles = StyleSheet.create({
     borderTopColor: '#eee',
     borderTopWidth: 2,
     marginBottom: 12,
+  },
+  groupTitle: {
+    color: 'black',
+    fontFamily: 'AeonikFono-Black',
+    fontSize: 15,
+    marginBottom: 10,
+    textTransform: 'uppercase',
   },
   header: {
     alignItems: 'center',

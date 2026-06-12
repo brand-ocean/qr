@@ -156,23 +156,13 @@ export default function YouTubePlayerComponent({
     onReadyChange?.(true);
   }, [onReadyChange]);
 
-  const handleError = useCallback(
-    (errorMsg: string) => {
-      const code = String(errorMsg).trim();
-      let message: string;
-      if (code === '100') {
-        message = 'Deze video is verwijderd of niet meer beschikbaar.';
-      } else if (code === '101' || code === '150') {
-        message = 'Deze video mag niet worden afgespeeld in de app.';
-      } else {
-        message = 'Er is een probleem met deze video. Probeer het opnieuw.';
-      }
-      setIsReady(false);
-      onReadyChange?.(false);
-      onVideoError?.(message);
-    },
-    [onReadyChange, onVideoError],
-  );
+  const handleError = useCallback(() => {
+    setIsReady(false);
+    onReadyChange?.(false);
+    onVideoError?.(
+      'Deze video is tijdelijk niet beschikbaar. Leg deze onderaan de stapel en probeer het later opnieuw.',
+    );
+  }, [onReadyChange, onVideoError]);
 
   const handleReplay = useCallback(async () => {
     playClickSound();

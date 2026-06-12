@@ -87,6 +87,8 @@ export default function VideoScreen() {
   }
 
   const shouldShowWarning = video.contentWarning && showContentWarning;
+  // Cards that are permanently pulled get videoId 'ERROR' in the dataset.
+  const isPermanentlyUnavailable = video.videoId === 'ERROR';
 
   return (
     <View style={styles.container}>
@@ -126,9 +128,27 @@ export default function VideoScreen() {
                   variant="outline"
                 />
               </View>
+            ) : isPermanentlyUnavailable ? (
+              <View style={styles.noticeCard}>
+                <Text style={styles.noticeTitle}>
+                  Video niet meer beschikbaar
+                </Text>
+                <Text style={styles.noticeText}>
+                  Deze video is niet meer beschikbaar. Onze excuses hiervoor. Je
+                  kunt dit kaartje uit het spel verwijderen.
+                </Text>
+                <ViralButton
+                  onPress={goBack}
+                  style={styles.fullWidthButton}
+                  title="TERUG"
+                  variant="outline"
+                />
+              </View>
             ) : videoError ? (
               <View style={styles.noticeCard}>
-                <Text style={styles.noticeTitle}>Video niet beschikbaar</Text>
+                <Text style={styles.noticeTitle}>
+                  Video tijdelijk niet beschikbaar
+                </Text>
                 <Text style={styles.noticeText}>{videoError}</Text>
                 <ViralButton
                   onPress={() => setVideoError(null)}
