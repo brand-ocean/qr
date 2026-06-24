@@ -4,6 +4,16 @@ const VIDEO_BY_ID = new Map<string, VideoCard>(
   VIDEOS.map((video) => [video.id, video]),
 );
 
+// Google Analytics 4 (Measurement-ID G-3Z9MY76V4C, stream-ID 15143966199)
+const GA_MEASUREMENT_ID = 'G-3Z9MY76V4C';
+const GA_SNIPPET = `    <script async src="https://www.googletagmanager.com/gtag/js?id=${GA_MEASUREMENT_ID}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){dataLayer.push(arguments);}
+      gtag('js', new Date());
+      gtag('config', '${GA_MEASUREMENT_ID}');
+    </script>`;
+
 interface EmailSender {
   send(message: {
     to: string | string[];
@@ -93,7 +103,9 @@ const PLAYER_STYLES = `
   .main-layout { display: flex; flex-direction: row; align-items: center; padding: 12px; min-height: 100vh; min-height: 100dvh; box-sizing: border-box; }
   .video-section { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; }
   .frame { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border: 4px solid #fff; border-radius: 4px; overflow: hidden; }
-  .frame iframe, .frame #player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  /* Clip the top of the iframe to hide YouTube's title overlay (matches the native app's TITLE_CLIP). */
+  /* Iframe stays 16:9 (no distortion), bottom-aligned and oversized so the top ~60px sits above the frame. */
+  .frame iframe, .frame #player { position: absolute; bottom: 0; left: 50%; width: auto; height: calc(100% + 60px); aspect-ratio: 16 / 9; transform: translateX(-50%); border: 0; }
   .overlay-btn { position: absolute; inset: 0; z-index: 4; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); border: 0; cursor: pointer; padding: 0; }
   .overlay-btn svg { width: 72px; height: 72px; }
   .button-panel { width: 185px; display: flex; flex-direction: column; justify-content: center; padding-left: 12px; box-sizing: border-box; }
@@ -132,6 +144,7 @@ function pageShell(title: string, body: string, bodyClass = ''): string {
     <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
     <meta name="robots" content="noindex" />
     <title>${title}</title>
+${GA_SNIPPET}
     <style>${SHARED_STYLES}${PLAYER_STYLES}</style>
   </head>
   <body${bodyClass ? ` class="${bodyClass}"` : ''}>
@@ -472,6 +485,7 @@ function homepageHtml(): string {
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width,initial-scale=1" />
     <title>Virals Game</title>
+${GA_SNIPPET}
     <style>${SHARED_STYLES}</style>
   </head>
   <body>
@@ -485,6 +499,92 @@ function homepageHtml(): string {
     </div>
   </body>
 </html>`;
+}
+
+function privacyPageHtml(): string {
+  return pageShell(
+    'Privacyverklaring · Virals Game',
+    `    <style>
+      body.privacy { align-items: flex-start; }
+      .privacy-card { max-width: 720px; text-align: left; }
+      .privacy-card h1 { font-size: 24px; margin: 0 0 4px; }
+      .privacy-card .updated { color: #999; font-size: 13px; margin: 0 0 20px; text-align: left; }
+      .privacy-card h2 { font-size: 17px; margin: 24px 0 8px; border-bottom: 2px solid #2a2a2a; padding-bottom: 6px; }
+      .privacy-card p { text-align: left; line-height: 1.55; margin: 0 0 10px; }
+      .privacy-card ul { padding-left: 20px; line-height: 1.55; margin: 0 0 10px; }
+      .privacy-card li { margin: 0 0 4px; }
+      .privacy-card a { display: inline; color: #FFCC00; text-decoration: underline; padding: 0; font-weight: 400; word-break: break-word; }
+    </style>
+    <div class="card privacy-card">
+      <h1>Privacyverklaring</h1>
+      <p class="updated">Laatst bijgewerkt: 24 juni 2026</p>
+
+      <p>creative key b.v., gevestigd aan rooswijck 5-A 1081 AJ Amsterdam, is verantwoordelijk voor de verwerking van persoonsgegevens zoals weergegeven in deze privacyverklaring.</p>
+
+      <h2>Contactgegevens</h2>
+      <p>creative key b.v.<br />rooswijck 5-A 1081 AJ Amsterdam<br />+31 6 81483375</p>
+      <p>Frank van der Slot is de Functionaris Gegevensbescherming van creative key b.v. Hij/zij is te bereiken via <a href="mailto:shop@avondmakers.nl">shop@avondmakers.nl</a>.</p>
+
+      <h2>Persoonsgegevens die wij verwerken</h2>
+      <p>creative key b.v. verwerkt je persoonsgegevens doordat je gebruik maakt van onze diensten en/of omdat je deze gegevens zelf aan ons verstrekt. Hieronder vind je een overzicht van de persoonsgegevens die wij verwerken:</p>
+      <ul>
+        <li>Voor- en achternaam</li>
+        <li>Internetbrowser en apparaat type</li>
+        <li>Geslacht</li>
+        <li>Geboortedatum</li>
+        <li>Geboorteplaats</li>
+        <li>Adresgegevens</li>
+        <li>Telefoonnummer</li>
+        <li>E-mailadres</li>
+        <li>IP-adres</li>
+        <li>Overige persoonsgegevens die de klant actief verstrekt bijvoorbeeld door een profiel op jouw website aan te maken, in correspondentie en telefonisch</li>
+        <li>Locatiegegevens</li>
+        <li>Gegevens over jouw activiteiten op onze website</li>
+        <li>Gegevens over jouw surfgedrag over verschillende websites heen (bijvoorbeeld omdat dit bedrijf onderdeel is van een advertentienetwerk)</li>
+        <li>Lijst met contactgegevens van de klant via een app</li>
+      </ul>
+
+      <h2>Bijzondere en/of gevoelige persoonsgegevens die wij verwerken</h2>
+      <p>Onze website en/of dienst heeft niet de intentie gegevens te verzamelen over websitebezoekers die jonger zijn dan 16 jaar. Tenzij ze toestemming hebben van ouders of voogd. We kunnen echter niet controleren of een bezoeker ouder dan 16 is. Wij raden ouders dan ook aan betrokken te zijn bij de online activiteiten van hun kinderen, om zo te voorkomen dat er gegevens over kinderen verzameld worden zonder ouderlijke toestemming. Als je er van overtuigd bent dat wij zonder die toestemming persoonlijke gegevens hebben verzameld over een minderjarige, neem dan contact met ons op via <a href="mailto:shop@avondmakers.nl">shop@avondmakers.nl</a>, dan verwijderen wij deze informatie.</p>
+
+      <h2>Met welk doel wij persoonsgegevens verwerken</h2>
+      <p>creative key b.v. verwerkt jouw persoonsgegevens voor de volgende doelen:</p>
+      <ul>
+        <li>Je de mogelijkheid te bieden een account aan te maken</li>
+        <li>Het afhandelen van jouw betaling</li>
+        <li>Verzenden van onze nieuwsbrief en/of reclamefolder</li>
+        <li>Je te kunnen bellen of e-mailen indien dit nodig is om onze dienstverlening uit te kunnen voeren</li>
+        <li>Je te informeren over wijzigingen van onze diensten en producten</li>
+        <li>Om goederen en diensten bij je af te leveren</li>
+        <li>creative key b.v. analyseert jouw gedrag op de website om daarmee de website te verbeteren en het aanbod van producten en diensten af te stemmen op jouw voorkeuren.</li>
+        <li>creative key b.v. volgt jouw surfgedrag over verschillende websites waarmee wij onze producten en diensten afstemmen op jouw behoefte.</li>
+      </ul>
+
+      <h2>Geautomatiseerde besluitvorming</h2>
+      <p>creative key b.v. maakt geen gebruik van geautomatiseerde besluitvorming.</p>
+
+      <h2>Hoe lang we persoonsgegevens bewaren</h2>
+      <p>creative key b.v. bewaart je persoonsgegevens niet langer dan strikt nodig is om de doelen te realiseren waarvoor je gegevens worden verzameld.</p>
+
+      <h2>Delen van persoonsgegevens met derden</h2>
+      <p>creative key b.v. verstrekt uitsluitend aan derden en alleen als dit nodig is voor de uitvoering van onze overeenkomst met jou of om te voldoen aan een wettelijke verplichting.</p>
+
+      <h2>Cookies, of vergelijkbare technieken, die wij gebruiken</h2>
+      <p>creative key b.v. gebruikt functionele, analytische en tracking cookies. Een cookie is een klein tekstbestand dat bij het eerste bezoek aan deze website wordt opgeslagen in de browser van je computer, tablet of smartphone. creative key b.v. gebruikt cookies met een puur technische functionaliteit. Deze zorgen ervoor dat de website naar behoren werkt en dat bijvoorbeeld jouw voorkeursinstellingen onthouden worden. Deze cookies worden ook gebruikt om de website goed te laten werken en deze te kunnen optimaliseren. Daarnaast plaatsen we cookies die jouw surfgedrag bijhouden zodat we op maat gemaakte content en advertenties kunnen aanbieden.</p>
+      <p>Bij jouw eerste bezoek aan onze website hebben wij je al ge&iuml;nformeerd over deze cookies en hebben we je toestemming gevraagd voor het plaatsen ervan.</p>
+      <p>Je kunt je afmelden voor cookies door je internetbrowser zo in te stellen dat deze geen cookies meer opslaat. Daarnaast kun je ook alle informatie die eerder is opgeslagen via de instellingen van je browser verwijderen. Zie voor een toelichting: <a href="https://veiliginternetten.nl/wat-zijn-cookies/">https://veiliginternetten.nl/wat-zijn-cookies/</a></p>
+
+      <h2>Gegevens inzien, aanpassen of verwijderen</h2>
+      <p>Je hebt het recht om je persoonsgegevens in te zien, te corrigeren of te verwijderen. Daarnaast heb je het recht om je eventuele toestemming voor de gegevensverwerking in te trekken of bezwaar te maken tegen de verwerking van jouw persoonsgegevens door creative key b.v. en heb je het recht op gegevensoverdraagbaarheid. Dat betekent dat je bij ons een verzoek kan indienen om de persoonsgegevens die wij van jou beschikken in een computerbestand naar jou of een ander, door jou genoemde organisatie, te sturen.</p>
+      <p>Je kunt een verzoek tot inzage, correctie, verwijdering, gegevensoverdraging van je persoonsgegevens of verzoek tot intrekking van je toestemming of bezwaar op de verwerking van jouw persoonsgegevens sturen naar <a href="mailto:shop@avondmakers.nl">shop@avondmakers.nl</a>.</p>
+      <p>Om er zeker van te zijn dat het verzoek tot inzage door jou is gedaan, vragen wij jou een kopie van je identiteitsbewijs met het verzoek mee te sturen. Maak in deze kopie je pasfoto, MRZ (machine readable zone, de strook met nummers onderaan het paspoort), paspoortnummer en Burgerservicenummer (BSN) zwart. Dit ter bescherming van je privacy. We reageren zo snel mogelijk, maar binnen vier weken, op jouw verzoek.</p>
+      <p>creative key b.v. wil je er tevens op wijzen dat je de mogelijkheid hebt om een klacht in te dienen bij de nationale toezichthouder, de Autoriteit Persoonsgegevens. Dat kan via de volgende link: <a href="https://autoriteitpersoonsgegevens.nl/nl/contact-met-de-autoriteit-persoonsgegevens/tip-ons">https://autoriteitpersoonsgegevens.nl/nl/contact-met-de-autoriteit-persoonsgegevens/tip-ons</a></p>
+
+      <h2>Hoe wij persoonsgegevens beveiligen</h2>
+      <p>creative key b.v. neemt de bescherming van jouw gegevens serieus en neemt passende maatregelen om misbruik, verlies, onbevoegde toegang, ongewenste openbaarmaking en ongeoorloofde wijziging tegen te gaan. Als jij het idee hebt dat jouw gegevens toch niet goed beveiligd zijn of er aanwijzingen zijn van misbruik, neem dan contact op met onze klantenservice of via <a href="mailto:shop@avondmakers.nl">shop@avondmakers.nl</a>.</p>
+    </div>`,
+    'privacy',
+  );
 }
 
 function escapeHtml(value: string): string {
@@ -756,6 +856,15 @@ export default {
       return new Response(homepageHtml(), {
         headers: {
           'Cache-Control': 'no-store',
+          'Content-Type': 'text/html; charset=utf-8',
+        },
+      });
+    }
+
+    if (pathname === '/privacy' || pathname === '/privacy/') {
+      return new Response(privacyPageHtml(), {
+        headers: {
+          'Cache-Control': 'public, max-age=3600',
           'Content-Type': 'text/html; charset=utf-8',
         },
       });
