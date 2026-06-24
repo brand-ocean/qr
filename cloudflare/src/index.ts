@@ -53,6 +53,10 @@ const SHARED_STYLES = `
   @font-face { font-family: 'Aeonik Fono'; src: url('/fonts/AeonikFono-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
   @font-face { font-family: 'Aeonik Fono'; src: url('/fonts/AeonikFono-Black.otf') format('opentype'); font-weight: 900; font-display: swap; }
   body { font-family: 'Aeonik Fono', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+  button, a, input { -webkit-tap-highlight-color: transparent; }
+  button { -webkit-appearance: none; appearance: none; font-family: inherit; }
+  button:focus { outline: none; }
+  button:focus-visible { outline: 2px solid #fff; outline-offset: 2px; }
   #sunburst { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
   #sunburst::before {
     content: '';
