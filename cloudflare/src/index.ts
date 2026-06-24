@@ -1,3 +1,9 @@
+import { VIDEOS, type VideoCard } from '../../src/data/videos.ts';
+
+const VIDEO_BY_ID = new Map<string, VideoCard>(
+  VIDEOS.map((video) => [video.id, video]),
+);
+
 interface EmailSender {
   send(message: {
     to: string | string[];
@@ -44,7 +50,9 @@ const ASSET_LINKS = [
 ];
 
 const SHARED_STYLES = `
-  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
+  @font-face { font-family: 'Aeonik Fono'; src: url('/fonts/AeonikFono-Bold.otf') format('opentype'); font-weight: 700; font-display: swap; }
+  @font-face { font-family: 'Aeonik Fono'; src: url('/fonts/AeonikFono-Black.otf') format('opentype'); font-weight: 900; font-display: swap; }
+  body { font-family: 'Aeonik Fono', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; margin: 0; padding: 24px; background: #000; color: #fff; min-height: 100vh; display: flex; align-items: center; justify-content: center; box-sizing: border-box; }
   #sunburst { position: fixed; inset: 0; overflow: hidden; z-index: 0; pointer-events: none; }
   #sunburst::before {
     content: '';
@@ -73,25 +81,384 @@ const SHARED_STYLES = `
   .logo { width: 100%; max-width: 320px; height: auto; display: block; margin: 0 auto 16px; }
 `;
 
-type Platform = 'ios' | 'android' | 'unknown';
+const PLAYER_STYLES = `
+  body.player { padding: 0; display: block; }
+  body.player #sunburst::before { animation: none; }
+  .dark-overlay { position: fixed; inset: 0; z-index: 0; background: rgba(0, 0, 0, 0.85); pointer-events: none; }
+  .video-screen { position: relative; z-index: 1; width: 100%; min-height: 100vh; min-height: 100dvh; box-sizing: border-box; }
+  .main-layout { display: flex; flex-direction: row; align-items: center; padding: 12px; min-height: 100vh; min-height: 100dvh; box-sizing: border-box; }
+  .video-section { flex: 1; min-width: 0; display: flex; align-items: center; justify-content: center; }
+  .frame { position: relative; width: 100%; aspect-ratio: 16 / 9; background: #000; border: 4px solid #fff; border-radius: 4px; overflow: hidden; }
+  .frame iframe, .frame #player { position: absolute; inset: 0; width: 100%; height: 100%; border: 0; }
+  .overlay-btn { position: absolute; inset: 0; z-index: 4; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); border: 0; cursor: pointer; padding: 0; }
+  .overlay-btn svg { width: 72px; height: 72px; }
+  .button-panel { width: 185px; display: flex; flex-direction: column; justify-content: center; padding-left: 12px; box-sizing: border-box; }
+  .signal { display: flex; justify-content: center; margin-bottom: 2px; }
+  .button-card { background: #fff; border: 4px solid #000; border-radius: 20px; padding: 8px; display: flex; flex-direction: column; gap: 8px; box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.8); }
+  .vb { display: flex; align-items: center; justify-content: center; border: 4px solid #000; border-radius: 16px; padding: 12px 8px; font-family: 'Aeonik Fono', sans-serif; font-weight: 700; text-transform: uppercase; font-size: 15px; text-decoration: none; cursor: pointer; box-sizing: border-box; }
+  .vb-primary { background: #007AFF; color: #fff; box-shadow: 4px 4px 0 #000; }
+  .vb-outline { background: transparent; color: #000; }
+  .play-row { display: flex; flex-direction: row; gap: 8px; }
+  .ctrl { flex: 1; min-height: 48px; background: #FFD700; border: 4px solid #000; border-radius: 16px; display: flex; align-items: center; justify-content: center; cursor: pointer; box-shadow: 4px 4px 0 #000; padding: 8px 0; }
+  .ctrl:disabled { opacity: 0.5; cursor: default; }
+  .ctrl svg { width: 26px; height: 26px; }
+  .gate { position: relative; z-index: 1; min-height: 100vh; min-height: 100dvh; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; }
+  .gate-card { background: #fff; color: #000; border: 4px solid #000; border-radius: 20px; padding: 24px; max-width: 360px; width: 100%; text-align: center; box-shadow: 6px 6px 0 rgba(0, 0, 0, 0.8); display: flex; flex-direction: column; gap: 16px; align-items: center; }
+  .gate-card h1 { margin: 0; font-size: 22px; font-weight: 900; }
+  .gate-card p { margin: 0; font-weight: 700; }
+  .notice-card { text-align: center; }
+  .notice-card h1 { font-size: 22px; }
+  .hidden { display: none !important; }
+  @media (orientation: portrait) {
+    .main-layout { flex-direction: column; justify-content: center; gap: 16px; }
+    .video-section { width: 100%; flex: 0 0 auto; }
+    .button-panel { width: 100%; max-width: 420px; align-self: center; padding-left: 0; }
+  }
+`;
 
-function detectPlatform(request: Request): Platform {
-  const ua = request.headers.get('User-Agent') ?? '';
-  if (/iPhone|iPad|iPod/i.test(ua)) return 'ios';
-  if (/Android/i.test(ua)) return 'android';
-  return 'unknown';
+const ICON_PLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M8 5v14l11-7z"/></svg>`;
+const ICON_PAUSE = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M6 5h4v14H6zm8 0h4v14h-4z"/></svg>`;
+const ICON_REPLAY = `<svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M12 5V1L7 6l5 5V7c3.31 0 6 2.69 6 6s-2.69 6-6 6-6-2.69-6-6H4c0 4.42 3.58 8 8 8s8-3.58 8-8-3.58-8-8-8z"/></svg>`;
+
+function pageShell(title: string, body: string, bodyClass = ''): string {
+  return `<!doctype html>
+<html lang="nl">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+    <meta name="robots" content="noindex" />
+    <title>${title}</title>
+    <style>${SHARED_STYLES}${PLAYER_STYLES}</style>
+  </head>
+  <body${bodyClass ? ` class="${bodyClass}"` : ''}>
+    <div id="sunburst"></div>
+${body}
+  </body>
+</html>`;
 }
 
-function storeButtons(platform: Platform, env: Env): string {
-  if (platform === 'ios') {
-    return `<a class="secondary" href="${env.APP_STORE_URL}">Download op iPhone</a>`;
-  }
-  if (platform === 'android') {
-    return `<a class="secondary" href="${env.PLAY_STORE_URL}">Download op Android</a>`;
-  }
-  return `
-    <a class="secondary" href="${env.APP_STORE_URL}">Download op iPhone</a>
-    <a class="secondary" href="${env.PLAY_STORE_URL}">Download op Android</a>`;
+function noticePageHtml(title: string, message: string): string {
+  return pageShell(
+    'Virals Game',
+    `    <div class="card notice-card">
+      <img class="logo" src="/virals-logo.png" alt="Virals Meme Editie" />
+      <h1>${escapeHtml(title)}</h1>
+      <p>${escapeHtml(message)}</p>
+    </div>`,
+  );
+}
+
+function playerPageHtml(card: VideoCard): string {
+  const clip = JSON.stringify({
+    endTime: card.endTime,
+    startTime: card.startTime,
+    videoId: card.videoId,
+  });
+
+  const signalSvg = `<svg width="60" height="30" viewBox="0 0 60 30" aria-hidden="true">
+            <path d="M 10 10 Q 30 0 50 10" fill="none" stroke="white" stroke-linecap="round" stroke-width="4" />
+            <path d="M 20 23 Q 30 16 40 23" fill="none" stroke="white" stroke-linecap="round" stroke-width="4" />
+          </svg>`;
+
+  const warningGate = card.contentWarning
+    ? `    <div class="gate" id="warningGate">
+      <div class="gate-card">
+        <h1>Let op</h1>
+        <p>Deze kaart bevat mogelijk schokkende of beledigende inhoud.</p>
+        <button class="vb vb-primary" id="warningContinue">Doorgaan</button>
+      </div>
+    </div>
+`
+    : '';
+  const playerHidden = card.contentWarning ? ' hidden' : '';
+
+  return pageShell(
+    'Virals Game',
+    `    <div class="dark-overlay"></div>
+${warningGate}    <div class="video-screen${playerHidden}" id="playerCard">
+      <div class="main-layout">
+        <div class="video-section">
+          <div class="frame">
+            <div id="player"></div>
+            <button id="bigPlay" class="overlay-btn" aria-label="Afspelen">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M8 5v14l11-7z"/></svg>
+            </button>
+          </div>
+        </div>
+        <div class="button-panel">
+          <div class="signal">${signalSvg}</div>
+          <div class="button-card">
+            <a class="vb vb-primary" href="/game#scan">SCAN KAART</a>
+            <div class="play-row">
+              <button id="playPause" class="ctrl" disabled aria-label="Afspelen of pauzeren">${ICON_PLAY}</button>
+              <button id="replay" class="ctrl" disabled aria-label="Opnieuw afspelen">${ICON_REPLAY}</button>
+            </div>
+            <a class="vb vb-outline" href="/game">Terug</a>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      var CLIP = ${clip};
+      var ICON_PLAY = ${JSON.stringify(ICON_PLAY)};
+      var ICON_PAUSE = ${JSON.stringify(ICON_PAUSE)};
+      var player, ready = false, ended = false, endTimer = null;
+      var bigPlay = document.getElementById('bigPlay');
+      var playPause = document.getElementById('playPause');
+      var replay = document.getElementById('replay');
+
+      function clearEndTimer() {
+        if (endTimer) { clearInterval(endTimer); endTimer = null; }
+      }
+      // The YouTube 'end' param only applies to the first play-through, so the
+      // clip boundary is enforced here on every play (matches the native app).
+      function watchEnd() {
+        clearEndTimer();
+        if (!CLIP.endTime || CLIP.endTime <= 0) { return; }
+        endTimer = setInterval(function () {
+          if (player && player.getCurrentTime && player.getCurrentTime() >= CLIP.endTime) {
+            ended = true;
+            player.pauseVideo();
+          }
+        }, 250);
+      }
+      function startClip() {
+        ended = false;
+        player.seekTo(CLIP.startTime, true);
+        player.playVideo();
+      }
+      function onYouTubeIframeAPIReady() {
+        player = new YT.Player('player', {
+          videoId: CLIP.videoId,
+          playerVars: {
+            controls: 0, rel: 0, modestbranding: 1, playsinline: 1,
+            iv_load_policy: 3, fs: 0, disablekb: 1,
+            start: CLIP.startTime,
+            end: CLIP.endTime > 0 ? CLIP.endTime : undefined
+          },
+          events: {
+            onReady: function () {
+              ready = true;
+              playPause.disabled = false;
+              replay.disabled = false;
+            },
+            onStateChange: function (e) {
+              if (e.data === YT.PlayerState.PLAYING) {
+                playPause.innerHTML = ICON_PAUSE;
+                watchEnd();
+              } else {
+                playPause.innerHTML = ICON_PLAY;
+                clearEndTimer();
+                if (e.data === YT.PlayerState.ENDED) { ended = true; }
+              }
+            },
+            onError: function () {
+              clearEndTimer();
+              document.querySelector('.video-section').innerHTML =
+                '<div class="gate-card">' +
+                '<h1>Video tijdelijk niet beschikbaar</h1>' +
+                '<p>Probeer het later opnieuw.</p></div>';
+            }
+          }
+        });
+      }
+      bigPlay.addEventListener('click', function () {
+        bigPlay.classList.add('hidden');
+        if (ready) { startClip(); }
+      });
+      playPause.addEventListener('click', function () {
+        if (!ready) { return; }
+        var state = player.getPlayerState();
+        if (state === YT.PlayerState.PLAYING) { player.pauseVideo(); }
+        else if (ended) { startClip(); }
+        else { player.playVideo(); }
+      });
+      replay.addEventListener('click', function () {
+        if (ready) { startClip(); }
+      });
+      var warningGate = document.getElementById('warningGate');
+      if (warningGate) {
+        var WARN_KEY = 'viralsShowContentWarning';
+        function revealPlayer() {
+          warningGate.classList.add('hidden');
+          document.getElementById('playerCard').classList.remove('hidden');
+        }
+        // Respect the "Toon waarschuwing" setting from the rules screen.
+        if (localStorage.getItem(WARN_KEY) === 'false') { revealPlayer(); }
+        document.getElementById('warningContinue').addEventListener('click', function (event) {
+          event.preventDefault();
+          localStorage.setItem(WARN_KEY, 'false');
+          revealPlayer();
+        });
+      }
+    </script>
+    <script src="https://www.youtube.com/iframe_api"></script>`,
+    'player',
+  );
+}
+
+function gamePageHtml(): string {
+  return pageShell(
+    'Virals Game',
+    `    <style>
+      .info-btn { position: fixed; top: 16px; right: 16px; z-index: 5; width: 44px; height: 44px; border-radius: 22px; border: 3px solid #000; background: #fff; color: #000; font-weight: 800; font-size: 20px; cursor: pointer; box-shadow: 3px 3px 0 rgba(0,0,0,0.8); }
+      .game-wrap { position: relative; z-index: 1; width: 100%; max-width: 520px; display: flex; flex-direction: column; align-items: center; gap: 24px; }
+      .game-logo { width: 82%; max-width: 360px; height: auto; transform: rotate(-2deg); }
+      .game-card { background: #fff; color: #000; border: 5px solid #000; border-radius: 28px; padding: 24px; width: 100%; box-sizing: border-box; box-shadow: 12px 12px 0 rgba(0,0,0,0.8); display: flex; flex-direction: column; gap: 18px; align-items: center; }
+      .game-card p { color: #000; font-weight: 800; font-size: 18px; line-height: 1.4; margin: 0; }
+      .btn-primary { display: block; width: 100%; box-sizing: border-box; text-align: center; background: #FFCC00; color: #000; font-weight: 800; font-size: 18px; border: 4px solid #000; border-radius: 14px; padding: 14px; cursor: pointer; box-shadow: 5px 5px 0 rgba(0,0,0,0.8); }
+      #scanner { position: fixed; inset: 0; z-index: 50; background: #000; display: none; }
+      #scanner.open { display: block; }
+      #scanner video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+      .scan-frame { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -55%); width: 250px; height: 250px; max-width: 70vw; max-height: 70vw; border: 4px solid #fff; border-radius: 20px; box-shadow: 0 0 0 9999px rgba(0,0,0,0.45); }
+      .scan-hint { position: absolute; left: 0; right: 0; bottom: 130px; text-align: center; color: #fff; font-weight: 800; font-size: 18px; text-shadow: 2px 2px 0 #000; padding: 0 20px; }
+      .scan-msg { position: absolute; left: 50%; top: 16%; transform: translateX(-50%); color: #fff; background: rgba(0,0,0,0.7); padding: 12px 18px; border-radius: 12px; text-align: center; max-width: 80vw; line-height: 1.4; }
+      .scan-close { position: absolute; left: 20px; right: 20px; bottom: 48px; background: #fff; color: #000; font-weight: 800; font-size: 18px; border: 4px solid #000; border-radius: 14px; padding: 14px; cursor: pointer; box-shadow: 5px 5px 0 rgba(0,0,0,0.6); }
+      #rules { position: fixed; inset: 0; z-index: 60; background: rgba(0,0,0,0.8); display: none; align-items: center; justify-content: center; padding: 16px; }
+      #rules.open { display: flex; }
+      .rules-modal { background: #fff; color: #000; border: 4px solid #000; border-radius: 20px; max-width: 600px; width: 100%; max-height: 92%; overflow: hidden; display: flex; flex-direction: column; }
+      .rules-head { display: flex; align-items: center; justify-content: space-between; background: #FFD700; border-bottom: 4px solid #000; padding: 10px 16px; }
+      .rules-head h2 { margin: 0; font-size: 16px; text-transform: uppercase; }
+      .rules-close { background: none; border: 0; font-size: 28px; font-weight: 800; cursor: pointer; line-height: 1; }
+      .rules-body { padding: 16px; overflow-y: auto; text-align: left; }
+      .rules-body h3 { font-size: 14px; text-transform: uppercase; border-bottom: 2px solid #eee; padding-bottom: 4px; margin: 16px 0 6px; }
+      .rules-body p { color: #333; font-size: 14px; line-height: 1.45; margin: 0 0 6px; text-align: left; }
+      .rules-group { font-size: 15px; text-transform: uppercase; font-weight: 900; margin: 0 0 8px; }
+      .rules-divider { border-top: 2px solid #eee; margin: 14px 0; }
+      .toggle-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 12px; }
+      .toggle-row input { width: 26px; height: 26px; }
+    </style>
+    <button class="info-btn" id="infoBtn" aria-label="Informatie">i</button>
+    <div class="game-wrap">
+      <img class="game-logo" src="/virals-logo.png" alt="Virals Meme Editie" />
+      <div class="game-card">
+        <p>Scan een QR code op een kaart om de video te bekijken!</p>
+        <button class="btn-primary" id="scanBtn">SCAN KAART</button>
+      </div>
+    </div>
+    <div id="scanner">
+      <video id="scanVideo" playsinline muted></video>
+      <div class="scan-frame"></div>
+      <div class="scan-hint">Richt de camera op een QR code</div>
+      <div class="scan-msg hidden" id="scanMsg"></div>
+      <button class="scan-close" id="scanClose">SLUITEN</button>
+    </div>
+    <div id="rules">
+      <div class="rules-modal">
+        <div class="rules-head"><h2>Informatie</h2><button class="rules-close" id="rulesClose" aria-label="Sluiten">&times;</button></div>
+        <div class="rules-body">
+          <p class="rules-group">Hoe werkt het spel</p>
+          <h3>Pak een kaart van de stapel</h3>
+          <p>Pak een kaart zonder te kijken naar de achterkant met het jaartal.</p>
+          <h3>Scan de QR-code</h3>
+          <p>Tik op SCAN KAART en richt de camera op de QR-code. De video opent automatisch.</p>
+          <h3>Bekijk de video</h3>
+          <p>Klik op &#9658; om de video te starten. Gebruik &#10074;&#10074; om te pauzeren of &#8635; om opnieuw te bekijken.</p>
+          <div class="rules-divider"></div>
+          <h3>Inhoudswaarschuwing</h3>
+          <p>Sommige kaarten bevatten schokkende of beledigende inhoud. Zet de waarschuwing aan om v&oacute;&oacute;r het spelen van deze kaarten een melding te krijgen.</p>
+          <div class="toggle-row"><span>Toon waarschuwing</span><input type="checkbox" id="cwToggle" /></div>
+        </div>
+      </div>
+    </div>
+    <canvas id="scanCanvas" class="hidden"></canvas>
+    <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
+    <script>
+      (function () {
+        var WARN_KEY = 'viralsShowContentWarning';
+        // Regex-free parse so this string stays safe inside the server template.
+        function parseCardId(value) {
+          if (!value) { return null; }
+          var v = value.trim().toLowerCase();
+          if (v.indexOf('viralsgame') < 0) { return null; }
+          var i = v.indexOf('kaart');
+          if (i < 0) { return null; }
+          var d = v.slice(i + 5, i + 9);
+          if (d.length !== 4) { return null; }
+          for (var k = 0; k < 4; k++) {
+            var c = d.charCodeAt(k);
+            if (c < 48 || c > 57) { return null; }
+          }
+          return 'kaart' + d;
+        }
+
+        var rules = document.getElementById('rules');
+        document.getElementById('infoBtn').addEventListener('click', function () { rules.classList.add('open'); });
+        document.getElementById('rulesClose').addEventListener('click', function () { rules.classList.remove('open'); });
+        rules.addEventListener('click', function (e) { if (e.target === rules) { rules.classList.remove('open'); } });
+        var cw = document.getElementById('cwToggle');
+        cw.checked = localStorage.getItem(WARN_KEY) !== 'false';
+        cw.addEventListener('change', function () { localStorage.setItem(WARN_KEY, cw.checked ? 'true' : 'false'); });
+
+        var scanner = document.getElementById('scanner');
+        var video = document.getElementById('scanVideo');
+        var canvas = document.getElementById('scanCanvas');
+        var ctx = canvas.getContext('2d', { willReadFrequently: true });
+        var msg = document.getElementById('scanMsg');
+        var stream = null, raf = null, detector = null, scanning = false;
+
+        function showMsg(t) { msg.textContent = t; msg.classList.remove('hidden'); }
+        function hideMsg() { msg.classList.add('hidden'); }
+        function stopScan() {
+          scanning = false;
+          if (raf) { cancelAnimationFrame(raf); raf = null; }
+          if (stream) { stream.getTracks().forEach(function (t) { t.stop(); }); stream = null; }
+        }
+        function closeScanner() { stopScan(); scanner.classList.remove('open'); }
+        function handleValue(value) {
+          var id = parseCardId(value);
+          if (id) { stopScan(); window.location.href = '/' + id; return true; }
+          return false;
+        }
+        function tick() {
+          if (!scanning) { return; }
+          if (video.readyState === video.HAVE_ENOUGH_DATA) {
+            if (detector) {
+              detector.detect(video).then(function (codes) {
+                if (codes && codes.length) { for (var i = 0; i < codes.length; i++) { if (handleValue(codes[i].rawValue)) { return; } } }
+              }).catch(function () {});
+            } else if (window.jsQR) {
+              var w = video.videoWidth, h = video.videoHeight;
+              if (w && h) {
+                canvas.width = w; canvas.height = h;
+                ctx.drawImage(video, 0, 0, w, h);
+                var img = ctx.getImageData(0, 0, w, h);
+                var code = window.jsQR(img.data, w, h, { inversionAttempts: 'dontInvert' });
+                if (code && code.data && handleValue(code.data)) { return; }
+              }
+            }
+          }
+          raf = requestAnimationFrame(tick);
+        }
+        async function startCamera() {
+          hideMsg();
+          try {
+            if ('BarcodeDetector' in window) {
+              try {
+                var formats = await window.BarcodeDetector.getSupportedFormats();
+                if (formats.indexOf('qr_code') >= 0) { detector = new window.BarcodeDetector({ formats: ['qr_code'] }); }
+              } catch (e) {}
+            }
+            stream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: { ideal: 'environment' } }, audio: false });
+            video.srcObject = stream;
+            await video.play();
+            scanning = true;
+            raf = requestAnimationFrame(tick);
+          } catch (err) {
+            if (err && (err.name === 'NotAllowedError' || err.name === 'NotFoundError')) {
+              showMsg('Geef cameratoegang om te scannen, of open de QR-code met je standaard camera-app.');
+            } else {
+              showMsg('Camera kon niet starten. Tik op SLUITEN en probeer opnieuw.');
+            }
+          }
+        }
+        function openScanner() { scanner.classList.add('open'); startCamera(); }
+        document.getElementById('scanBtn').addEventListener('click', openScanner);
+        document.getElementById('scanClose').addEventListener('click', closeScanner);
+        if (location.hash === '#scan') { openScanner(); }
+      })();
+    </script>`,
+  );
 }
 
 function homepageHtml(): string {
@@ -112,36 +479,6 @@ function homepageHtml(): string {
         <a class="primary" href="https://avondmakers.nl/products/virals-meme-editie">Pre-order</a>
       </div>
     </div>
-  </body>
-</html>`;
-}
-
-function fallbackHtml(cardId: string, _platform: Platform, _env: Env): string {
-  const escapedCardId = cardId.replaceAll(/[^\da-z]/gi, '');
-  const deepLink = `viralsgame://${escapedCardId}`;
-
-  return `<!doctype html>
-<html lang="nl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Virals Game</title>
-    <style>${SHARED_STYLES}</style>
-  </head>
-  <body>
-    <div id="sunburst"></div>
-    <div class="card">
-      <img class="logo" src="/virals-logo.png" alt="Virals Meme Editie" />
-      <p>Je hebt een kaart gescand van Virals Game. Pre-order nu jouw eigen set!</p>
-      <div class="buttons">
-        <a class="primary" href="https://avondmakers.nl/products/virals-meme-editie">Pre-order</a>
-      </div>
-    </div>
-    <script>
-      setTimeout(() => {
-        window.location.href = '${deepLink}';
-      }, 120);
-    </script>
   </body>
 </html>`;
 }
@@ -420,6 +757,15 @@ export default {
       });
     }
 
+    if (pathname === '/game' || pathname === '/game/') {
+      return new Response(gamePageHtml(), {
+        headers: {
+          'Cache-Control': 'no-store',
+          'Content-Type': 'text/html; charset=utf-8',
+        },
+      });
+    }
+
     if (
       pathname === '/.well-known/apple-app-site-association' ||
       pathname === '/apple-app-site-association'
@@ -443,15 +789,28 @@ export default {
 
     const match = pathname.match(/^\/(kaart\d{4})$/i);
     if (match?.[1]) {
-      return new Response(
-        fallbackHtml(match[1].toLowerCase(), detectPlatform(request), env),
-        {
-          headers: {
-            'Cache-Control': 'no-store',
-            'Content-Type': 'text/html; charset=utf-8',
-          },
+      const cardId = match[1].toLowerCase();
+      const card = VIDEO_BY_ID.get(cardId);
+      let html: string;
+      if (!card) {
+        html = noticePageHtml(
+          'Kaart niet gevonden',
+          `Kaart "${cardId}" bestaat niet. Controleer de QR-code of het kaartnummer.`,
+        );
+      } else if (card.videoId === 'ERROR') {
+        html = noticePageHtml(
+          'Video niet meer beschikbaar',
+          'Deze video is niet meer beschikbaar. Onze excuses hiervoor. Je kunt dit kaartje uit het spel verwijderen.',
+        );
+      } else {
+        html = playerPageHtml(card);
+      }
+      return new Response(html, {
+        headers: {
+          'Cache-Control': 'no-store',
+          'Content-Type': 'text/html; charset=utf-8',
         },
-      );
+      });
     }
 
     return new Response('Not Found', { status: 404 });

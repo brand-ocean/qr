@@ -25,3 +25,9 @@ web-build/
 .enum_manifest.json
 .src_manifest.json
 source_strings.json
+
+# Google Play service account key (never commit)
+google-play-service-account.json
+
+# Wrangler local cache/state
+cloudflare/.wrangler/
