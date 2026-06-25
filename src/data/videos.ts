@@ -253,11 +253,11 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 49,
+    endTime: 0,
     id: 'kaart0027',
     quote: 'Radiozendamateur',
-    startTime: 28,
-    videoId: 'dQa8lydtFmE',
+    startTime: 14,
+    videoId: 'dwOW3WhMq5s',
     year: 2016,
   },
   {
@@ -289,11 +289,11 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 453,
+    endTime: 0,
     id: 'kaart0031',
     quote: 'De duif is dood',
-    startTime: 432,
-    videoId: 'OUi2RBQ_Q6M',
+    startTime: 0,
+    videoId: 'EFg9PRm0b48',
     year: 1967,
   },
   {
@@ -604,10 +604,10 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 80,
+    endTime: 59,
     id: 'kaart0066',
     quote: 'witte chocolade vlokken',
-    startTime: 60,
+    startTime: 29,
     videoId: 'pa6IOZ2sOjM',
     year: 2012,
   },
@@ -1360,11 +1360,11 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 221,
+    endTime: 147,
     id: 'kaart0150',
     quote: 'Môge',
-    startTime: 201,
-    videoId: '8kiFPJtdxHI',
+    startTime: 133,
+    videoId: 'uWO0bsVg_X8',
     year: 1977,
   },
   {
@@ -1531,11 +1531,11 @@ export const VIDEOS: ReadonlyArray<VideoCard> = [
   },
   {
     contentWarning: false,
-    endTime: 746,
+    endTime: 0,
     id: 'kaart0169',
     quote: 'Die hele snieklaas, daar houd ik helemaal niet van',
-    startTime: 727,
-    videoId: 'qfqR4DBff2Q',
+    startTime: 0,
+    videoId: '6mCoGBgoquA',
     year: 1974,
   },
   {
