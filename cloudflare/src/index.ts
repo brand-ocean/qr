@@ -183,6 +183,7 @@ function playerPageHtml(card: VideoCard): string {
         <h1>Let op</h1>
         <p>Deze kaart bevat mogelijk schokkende of beledigende inhoud.</p>
         <button class="vb vb-primary" id="warningContinue">Doorgaan</button>
+        <a class="vb vb-outline" href="/game#scan">Andere kaart scannen</a>
       </div>
     </div>
 `
@@ -302,9 +303,10 @@ ${warningGate}    <div class="video-screen${playerHidden}" id="playerCard">
         }
         // Respect the "Toon waarschuwing" setting from the rules screen.
         if (localStorage.getItem(WARN_KEY) === 'false') { revealPlayer(); }
+        // Continue only reveals this card; it must not change the global
+        // "Toon waarschuwing" preference, otherwise future cards skip the gate.
         document.getElementById('warningContinue').addEventListener('click', function (event) {
           event.preventDefault();
-          localStorage.setItem(WARN_KEY, 'false');
           revealPlayer();
         });
       }
@@ -476,29 +478,6 @@ function gamePageHtml(): string {
       })();
     </script>`,
   );
-}
-
-function homepageHtml(): string {
-  return `<!doctype html>
-<html lang="nl">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Virals Game</title>
-${GA_SNIPPET}
-    <style>${SHARED_STYLES}</style>
-  </head>
-  <body>
-    <div id="sunburst"></div>
-    <div class="card">
-      <img class="logo" src="/virals-logo.png" alt="Virals Meme Editie" />
-      <p>Pre-order nu het virale meme kaartspel en speel het samen met vrienden.</p>
-      <div class="buttons">
-        <a class="primary" href="https://avondmakers.nl/products/virals-meme-editie">Pre-order</a>
-      </div>
-    </div>
-  </body>
-</html>`;
 }
 
 function privacyPageHtml(): string {
@@ -852,8 +831,8 @@ export default {
       );
     }
 
-    if (pathname === '/') {
-      return new Response(homepageHtml(), {
+    if (pathname === '/' || pathname === '/game' || pathname === '/game/') {
+      return new Response(gamePageHtml(), {
         headers: {
           'Cache-Control': 'no-store',
           'Content-Type': 'text/html; charset=utf-8',
@@ -865,15 +844,6 @@ export default {
       return new Response(privacyPageHtml(), {
         headers: {
           'Cache-Control': 'public, max-age=3600',
-          'Content-Type': 'text/html; charset=utf-8',
-        },
-      });
-    }
-
-    if (pathname === '/game' || pathname === '/game/') {
-      return new Response(gamePageHtml(), {
-        headers: {
-          'Cache-Control': 'no-store',
           'Content-Type': 'text/html; charset=utf-8',
         },
       });
