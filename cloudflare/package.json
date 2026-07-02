@@ -1,16 +1,46 @@
 {
   "name": "cloudflare-worker",
   "version": "1.0.0",
-  "description": "",
-  "keywords": [],
-  "license": "ISC",
-  "author": "",
-  "type": "commonjs",
-  "main": "index.js",
+  "private": true,
+  "description": "Virals Game web worker + admin (Convex)",
+  "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "admin:build": "npm run seed:build && vite build --config admin/vite.config.ts",
+    "admin:dev": "vite --config admin/vite.config.ts",
+    "convex:deploy": "convex deploy",
+    "convex:dev": "convex dev",
+    "deploy": "npm run admin:build && wrangler deploy",
+    "dev": "wrangler dev",
+    "seed:build": "node scripts/build-convex-seed.mjs",
+    "typecheck": "tsc -p admin/tsconfig.json --noEmit"
+  },
+  "dependencies": {
+    "@auth/core": "^0.41.1",
+    "@base-ui/react": "^1.6.0",
+    "@convex-dev/auth": "^0.0.94",
+    "@tanstack/react-table": "^8.21.3",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "convex": "^1.39.1",
+    "lucide-react": "^0.468.0",
+    "react": "^19.2.0",
+    "react-dom": "^19.2.0",
+    "recharts": "^2.15.4",
+    "sonner": "^2.0.7",
+    "tailwind-merge": "^3.6.0"
   },
   "devDependencies": {
+    "@svgr/plugin-jsx": "^8.1.0",
+    "@svgr/plugin-svgo": "^8.1.0",
+    "@tailwindcss/vite": "^4.1.0",
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.2.0",
+    "@types/react-dom": "^19.2.0",
+    "@vitejs/plugin-react": "^4.3.4",
+    "tailwindcss": "^4.1.0",
+    "typescript": "^5.7.0",
+    "vite": "^6.3.0",
+    "vite-plugin-svgr": "^4.5.0",
     "wrangler": "^4.67.0"
   }
 }

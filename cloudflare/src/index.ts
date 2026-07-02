@@ -1,8 +1,85 @@
+import { ConvexHttpClient } from 'convex/browser';
+import { makeFunctionReference } from 'convex/server';
 import { VIDEOS, type VideoCard } from '../../src/data/videos.ts';
 
+// Bundled dataset — used as a fallback when Convex is unreachable.
 const VIDEO_BY_ID = new Map<string, VideoCard>(
   VIDEOS.map((video) => [video.id, video]),
 );
+
+// The subset of a card the player page needs.
+type PlayableCard = Pick<
+  VideoCard,
+  'videoId' | 'startTime' | 'endTime' | 'contentWarning'
+>;
+
+// Convex is the source of truth for card data; the worker reads it live.
+const getForPlayerRef = makeFunctionReference<
+  'query',
+  { cardId: string },
+  PlayableCard | null
+>('cards:getForPlayer');
+
+// Fire-and-forget scan counter (drives the admin dashboard). Never blocks or
+// affects the player page.
+const logScanRef = makeFunctionReference<'mutation', { cardId: string }, null>(
+  'scans:log',
+);
+
+// One HTTP client per deployment URL, reused across requests in this isolate.
+let convexClient: ConvexHttpClient | null = null;
+function getConvexClient(url: string): ConvexHttpClient {
+  if (convexClient === null) {
+    convexClient = new ConvexHttpClient(url);
+  }
+  return convexClient;
+}
+
+// Short per-isolate cache so bursts of scans don't hammer Convex.
+const CARD_TTL_MS = 60_000;
+const cardCache = new Map<string, { card: PlayableCard | null; ts: number }>();
+
+// Resolves a card by id. Convex is authoritative (a null result means the card
+// was deleted and we 404, matching the live admin). Only a Convex *error* falls
+// back to the bundled dataset.
+async function resolveCard(
+  env: Env,
+  cardId: string,
+): Promise<PlayableCard | null> {
+  const now = Date.now();
+  const cached = cardCache.get(cardId);
+  if (cached && now - cached.ts < CARD_TTL_MS) {
+    return cached.card;
+  }
+  if (env.CONVEX_URL) {
+    try {
+      const card = await getConvexClient(env.CONVEX_URL).query(
+        getForPlayerRef,
+        {
+          cardId,
+        },
+      );
+      cardCache.set(cardId, { card, ts: now });
+      return card;
+    } catch {
+      // Convex down — fall through to the bundled snapshot.
+    }
+  }
+  return VIDEO_BY_ID.get(cardId) ?? null;
+}
+
+// Non-blocking: record that a card was opened on the web player. Swallows all
+// errors so analytics never impact the player.
+async function logScan(env: Env, cardId: string): Promise<void> {
+  if (!env.CONVEX_URL) {
+    return;
+  }
+  try {
+    await getConvexClient(env.CONVEX_URL).mutation(logScanRef, { cardId });
+  } catch {
+    // Ignore — stats are best-effort.
+  }
+}
 
 // Google Analytics 4 (Measurement-ID G-3Z9MY76V4C, stream-ID 15143966199)
 const GA_MEASUREMENT_ID = 'G-3Z9MY76V4C';
@@ -31,6 +108,11 @@ interface Env {
   REPORT_EMAIL_TO: string;
   MAILER_TOKEN?: string;
   TRIGGER_KEY?: string;
+  // Convex deployment URL (e.g. https://acme-123.convex.cloud). When unset the
+  // worker serves cards purely from the bundled dataset.
+  CONVEX_URL?: string;
+  // Static assets binding (serves the built admin SPA under /admin).
+  ASSETS: Fetcher;
 }
 
 const AASA = {
@@ -165,7 +247,7 @@ function noticePageHtml(title: string, message: string): string {
   );
 }
 
-function playerPageHtml(card: VideoCard): string {
+function playerPageHtml(card: PlayableCard): string {
   const clip = JSON.stringify({
     endTime: card.endTime,
     startTime: card.startTime,
@@ -806,7 +888,11 @@ async function handleManualVideosCheck(
 }
 
 export default {
-  async fetch(request: Request, env: Env): Promise<Response> {
+  async fetch(
+    request: Request,
+    env: Env,
+    ctx: ExecutionContext,
+  ): Promise<Response> {
     const url = new URL(request.url);
     const { pathname } = url;
 
@@ -829,6 +915,23 @@ export default {
         url.searchParams.get('key') ?? '',
         url.searchParams.get('mail') === '1',
       );
+    }
+
+    // Admin SPA. Static files under /admin/ are served by the assets layer
+    // before the worker runs; this returns the SPA entry for the bare route.
+    // The entry HTML is served no-store so a new deploy's (content-hashed)
+    // bundle is picked up immediately instead of a stale cached shell.
+    if (pathname === '/admin' || pathname === '/admin/') {
+      const asset = await env.ASSETS.fetch(
+        new Request(new URL('/admin/index.html', request.url), request),
+      );
+      return new Response(asset.body, {
+        status: asset.status,
+        headers: {
+          'Content-Type': 'text/html; charset=utf-8',
+          'Cache-Control': 'no-store',
+        },
+      });
     }
 
     if (pathname === '/' || pathname === '/game' || pathname === '/game/') {
@@ -873,7 +976,7 @@ export default {
     const match = pathname.match(/^\/(kaart\d{4})$/i);
     if (match?.[1]) {
       const cardId = match[1].toLowerCase();
-      const card = VIDEO_BY_ID.get(cardId);
+      const card = await resolveCard(env, cardId);
       let html: string;
       if (!card) {
         html = noticePageHtml(
@@ -887,6 +990,8 @@ export default {
         );
       } else {
         html = playerPageHtml(card);
+        // Count the scan without delaying the response.
+        ctx.waitUntil(logScan(env, cardId));
       }
       return new Response(html, {
         headers: {

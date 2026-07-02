@@ -4,7 +4,8 @@
   "main": "src/index.ts",
   "compatibility_date": "2026-02-17",
   "assets": {
-    "directory": "./public"
+    "directory": "./public",
+    "binding": "ASSETS"
   },
   "routes": [
     { "pattern": "viralsgame.nl/*", "zone_name": "viralsgame.nl" },
@@ -14,6 +15,7 @@
   "vars": {
     "APP_STORE_URL": "https://apps.apple.com/",
     "PLAY_STORE_URL": "https://play.google.com/store/apps/details?id=nl.viralsgame.app",
-    "REPORT_EMAIL_TO": "info@brandocean.nl"
+    "REPORT_EMAIL_TO": "info@brandocean.nl",
+    "CONVEX_URL": "https://tacit-crab-381.eu-west-1.convex.cloud"
   }
 }
