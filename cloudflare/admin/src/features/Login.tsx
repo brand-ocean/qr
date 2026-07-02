@@ -57,11 +57,16 @@ export function Login() {
   return (
     <div className="flex min-h-svh items-center justify-center p-6">
       <Card className="w-full max-w-sm">
-        <div className="mb-6 text-center">
-          <h1 className="text-xl font-medium text-gray-900 dark:text-gray-50">
-            Virals Admin
-          </h1>
-          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+        <div className="mb-6 flex flex-col items-center text-center">
+          <img
+            src="/virals-logo.png"
+            alt="Virals"
+            className="mb-3 h-14 w-auto"
+            onError={(e) => {
+              e.currentTarget.style.display = 'none';
+            }}
+          />
+          <p className="text-sm text-gray-500 dark:text-gray-400">
             {flow === 'signIn'
               ? 'Log in om kaarten te beheren'
               : 'Account aanmaken'}
