@@ -2,6 +2,7 @@
 // (Tremor-style gray surfaces + accent). Ported/simplified from the forz
 // base-rhea context-menu.
 import { ContextMenu as Primitive } from '@base-ui/react/context-menu';
+import type React from 'react';
 import { cx } from '../../lib/utils';
 
 export const ContextMenu = Primitive.Root;
@@ -29,12 +30,15 @@ export function ContextMenuContent({
   );
 }
 
+// Plain label — NOT Base UI's GroupLabel, which requires a wrapping Group
+// (it calls setLabelId from Group context and crashes without one).
 export function ContextMenuLabel({
   className,
   ...props
-}: Primitive.GroupLabel.Props) {
+}: React.ComponentProps<'div'>) {
   return (
-    <Primitive.GroupLabel
+    <div
+      role="presentation"
       className={cx('text-muted-foreground px-2 py-1 text-xs', className)}
       {...props}
     />
