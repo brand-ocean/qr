@@ -61,7 +61,7 @@ export function Login() {
           <img
             src="/virals-logo.png"
             alt="Virals"
-            className="mb-3 h-14 w-auto"
+            className="mb-3 h-24 w-auto"
             onError={(e) => {
               e.currentTarget.style.display = 'none';
             }}
