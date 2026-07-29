@@ -1,4 +1,6 @@
 import { useAuthActions } from '@convex-dev/auth/react';
+import { SquareKanban } from 'lucide-react';
+import type { ComponentType } from 'react';
 import type { View } from '../lib/adminContext';
 import { cx } from '../lib/utils';
 import {
@@ -8,11 +10,17 @@ import {
   MoonIcon,
   SunIcon,
 } from './icons';
+import { QuickCapture } from './QuickCapture';
 import { Button } from './ui/button';
 
-const TABS: { view: View; label: string; icon: typeof DashboardIcon }[] = [
+const TABS: {
+  view: View;
+  label: string;
+  icon: ComponentType<{ className?: string }>;
+}[] = [
   { view: 'dashboard', label: 'Dashboard', icon: DashboardIcon },
   { view: 'cards', label: 'Kaarten', icon: GridIcon },
+  { view: 'roadmap', label: 'Roadmap', icon: SquareKanban },
 ];
 
 // Horizontal top nav in the issapoule style: sticky bar, logo + tabs with an
@@ -48,6 +56,7 @@ export function Nav({
           </span>
         </div>
         <div className="flex items-center gap-1">
+          <QuickCapture />
           <Button
             variant="ghost"
             size="icon"

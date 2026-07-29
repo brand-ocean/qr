@@ -7,6 +7,7 @@ import { Nav } from './components/Nav';
 import { CardsAdmin } from './features/CardsAdmin';
 import { Dashboard } from './features/Dashboard';
 import { Login } from './features/Login';
+import { Roadmap } from './features/Roadmap';
 import {
   AdminContext,
   type CardMenuActions,
@@ -48,6 +49,8 @@ function AdminShell() {
         <main className="mx-auto max-w-6xl px-4 py-8 sm:px-6">
           {view === 'dashboard' ? (
             <Dashboard onOpenCards={() => setView('cards')} />
+          ) : view === 'roadmap' ? (
+            <Roadmap />
           ) : (
             <CardsAdmin />
           )}

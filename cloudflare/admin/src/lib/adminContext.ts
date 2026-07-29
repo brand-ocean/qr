@@ -1,13 +1,17 @@
 import type { Doc } from '@convex/_generated/dataModel';
 import { createContext, useContext, type MutableRefObject } from 'react';
 
-export type View = 'dashboard' | 'cards';
+export type View = 'dashboard' | 'cards' | 'roadmap';
+
+// A card enriched with its resolved override thumbnail (null = use the YouTube
+// default). Matches the shape returned by api.cards.list.
+export type CardDoc = Doc<'cards'> & { thumbnail: string | null };
 
 // Card actions the app-wide context menu can invoke; registered by CardsAdmin.
 export type CardMenuActions = {
-  getCard: (id: string) => Doc<'cards'> | null;
-  edit: (card: Doc<'cards'>) => void;
-  remove: (card: Doc<'cards'>) => void;
+  getCard: (id: string) => CardDoc | null;
+  edit: (card: CardDoc) => void;
+  remove: (card: CardDoc) => void;
 };
 
 export type AdminContextValue = {

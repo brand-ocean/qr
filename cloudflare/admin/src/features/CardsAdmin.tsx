@@ -1,5 +1,4 @@
 import { api } from '@convex/_generated/api';
-import type { Doc } from '@convex/_generated/dataModel';
 import {
   createColumnHelper,
   flexRender,
@@ -40,13 +39,12 @@ import {
   TableHeaderCell,
   TableRow,
 } from '../components/ui/table';
-import { useAdmin } from '../lib/adminContext';
+import { useAdmin, type CardDoc } from '../lib/adminContext';
 import { formatWhen } from '../lib/format';
 import { STATUS_META, type Status } from '../lib/status';
 import { formatClip, youtubeThumb, youtubeWatchUrl } from '../lib/youtube';
 import { CardDialog } from './CardDialog';
 
-type CardDoc = Doc<'cards'>;
 type View = 'list' | 'grid';
 type StatusFilter = 'all' | Status;
 
@@ -88,8 +86,19 @@ function SortHeader({
   );
 }
 
-function VideoThumb({ videoId }: { videoId: string }) {
-  if (videoId === 'ERROR') {
+// Resolve what image to show for a card: a custom override thumbnail wins,
+// otherwise the YouTube-derived thumbnail; null means "no image" (ERROR card
+// without an override) → placeholder.
+function cardThumbSrc(card: CardDoc): string | null {
+  return (
+    card.thumbnail ??
+    (card.videoId === 'ERROR' ? null : youtubeThumb(card.videoId))
+  );
+}
+
+function VideoThumb({ card }: { card: CardDoc }) {
+  const src = cardThumbSrc(card);
+  if (src === null) {
     return (
       <div className="flex h-9 w-16 shrink-0 items-center justify-center rounded bg-gray-100 text-gray-400 dark:bg-gray-800">
         <ImageIcon className="size-4" />
@@ -98,7 +107,7 @@ function VideoThumb({ videoId }: { videoId: string }) {
   }
   return (
     <img
-      src={youtubeThumb(videoId)}
+      src={src}
       alt=""
       className="h-9 w-16 shrink-0 rounded object-cover"
       loading="lazy"
@@ -138,7 +147,7 @@ export function CardsAdmin() {
         header: 'Kaart',
         cell: (ctx) => (
           <div className="flex items-center gap-2.5">
-            <VideoThumb videoId={ctx.row.original.videoId} />
+            <VideoThumb card={ctx.row.original} />
             <span className="font-medium text-gray-900 dark:text-gray-50">
               {ctx.getValue()}
             </span>
@@ -586,6 +595,7 @@ function GridView({
     <div className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
       {rows.map((card) => {
         const meta = STATUS_META[card.availabilityStatus];
+        const thumbSrc = cardThumbSrc(card);
         return (
           <button
             type="button"
@@ -595,13 +605,13 @@ function GridView({
             className="group overflow-hidden rounded-lg border border-gray-200 bg-white text-left shadow-sm transition hover:shadow-md dark:border-gray-800 dark:bg-gray-900"
           >
             <div className="relative aspect-video bg-gray-100 dark:bg-gray-800">
-              {card.videoId === 'ERROR' ? (
+              {thumbSrc === null ? (
                 <div className="flex h-full items-center justify-center text-gray-400">
                   <ImageIcon className="size-6" />
                 </div>
               ) : (
                 <img
-                  src={youtubeThumb(card.videoId)}
+                  src={thumbSrc}
                   alt=""
                   className="h-full w-full object-cover"
                   loading="lazy"

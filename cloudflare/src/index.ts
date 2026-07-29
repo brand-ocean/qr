@@ -7,11 +7,12 @@ const VIDEO_BY_ID = new Map<string, VideoCard>(
   VIDEOS.map((video) => [video.id, video]),
 );
 
-// The subset of a card the player page needs.
+// The subset of a card the player page needs. `thumbnail` is the admin-set
+// custom poster (Convex-resolved); absent in the bundled fallback dataset.
 type PlayableCard = Pick<
   VideoCard,
   'videoId' | 'startTime' | 'endTime' | 'contentWarning'
->;
+> & { thumbnail?: string | null; volume?: number };
 
 // Convex is the source of truth for card data; the worker reads it live.
 const getForPlayerRef = makeFunctionReference<
@@ -188,6 +189,7 @@ const PLAYER_STYLES = `
   /* Clip the top of the iframe to hide YouTube's title overlay (matches the native app's TITLE_CLIP). */
   /* Iframe stays 16:9 (no distortion), bottom-aligned and oversized so the top ~60px sits above the frame. */
   .frame iframe, .frame #player { position: absolute; bottom: 0; left: 50%; width: auto; height: calc(100% + 60px); aspect-ratio: 16 / 9; transform: translateX(-50%); border: 0; }
+  .poster { position: absolute; inset: 0; z-index: 3; width: 100%; height: 100%; object-fit: cover; background: #000; }
   .overlay-btn { position: absolute; inset: 0; z-index: 4; display: flex; align-items: center; justify-content: center; background: rgba(0, 0, 0, 0.45); border: 0; cursor: pointer; padding: 0; }
   .overlay-btn svg { width: 72px; height: 72px; }
   .button-panel { width: 185px; display: flex; flex-direction: column; justify-content: center; padding-left: 12px; box-sizing: border-box; }
@@ -252,7 +254,14 @@ function playerPageHtml(card: PlayableCard): string {
     endTime: card.endTime,
     startTime: card.startTime,
     videoId: card.videoId,
+    // 0–100; the player applies it on ready and on every (re)play. Unset = 100.
+    volume: card.volume ?? 100,
   });
+
+  // Poster shown over the iframe until first play: admin-set custom thumbnail
+  // wins, otherwise a low-res YouTube still (mqdefault, always exists).
+  const posterSrc =
+    card.thumbnail ?? `https://i.ytimg.com/vi/${card.videoId}/mqdefault.jpg`;
 
   const signalSvg = `<svg width="60" height="30" viewBox="0 0 60 30" aria-hidden="true">
             <path d="M 10 10 Q 30 0 50 10" fill="none" stroke="white" stroke-linecap="round" stroke-width="4" />
@@ -280,6 +289,7 @@ ${warningGate}    <div class="video-screen${playerHidden}" id="playerCard">
         <div class="video-section">
           <div class="frame">
             <div id="player"></div>
+            <img id="poster" class="poster" src="${escapeHtml(posterSrc)}" alt="" />
             <button id="bigPlay" class="overlay-btn" aria-label="Afspelen">
               <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="#fff" d="M8 5v14l11-7z"/></svg>
             </button>
@@ -306,6 +316,17 @@ ${warningGate}    <div class="video-screen${playerHidden}" id="playerCard">
       var bigPlay = document.getElementById('bigPlay');
       var playPause = document.getElementById('playPause');
       var replay = document.getElementById('replay');
+      var poster = document.getElementById('poster');
+
+      function hidePoster() { if (poster) { poster.classList.add('hidden'); } }
+      // At the end of the clip the (custom) poster and play overlay come back,
+      // so YouTube's own end screen / original thumbnail never shows.
+      function showEndPoster() {
+        if (poster) { poster.classList.remove('hidden'); }
+        bigPlay.classList.remove('hidden');
+      }
+      // If the poster image fails to load, drop it so YouTube's own still shows.
+      if (poster) { poster.addEventListener('error', function () { poster.remove(); poster = null; }); }
 
       function clearEndTimer() {
         if (endTimer) { clearInterval(endTimer); endTimer = null; }
@@ -316,14 +337,21 @@ ${warningGate}    <div class="video-screen${playerHidden}" id="playerCard">
         clearEndTimer();
         if (!CLIP.endTime || CLIP.endTime <= 0) { return; }
         endTimer = setInterval(function () {
-          if (player && player.getCurrentTime && player.getCurrentTime() >= CLIP.endTime) {
+          if (!ended && player && player.getCurrentTime && player.getCurrentTime() >= CLIP.endTime) {
             ended = true;
             player.pauseVideo();
+            showEndPoster();
           }
-        }, 250);
+        }, 100);
+      }
+      function applyVolume() {
+        if (player && player.setVolume) {
+          player.setVolume(typeof CLIP.volume === 'number' ? CLIP.volume : 100);
+        }
       }
       function startClip() {
         ended = false;
+        applyVolume();
         player.seekTo(CLIP.startTime, true);
         player.playVideo();
       }
@@ -333,23 +361,31 @@ ${warningGate}    <div class="video-screen${playerHidden}" id="playerCard">
           playerVars: {
             controls: 0, rel: 0, modestbranding: 1, playsinline: 1,
             iv_load_policy: 3, fs: 0, disablekb: 1,
+            // Keep captions off by default (they can otherwise auto-show
+            // when the viewer has subtitles enabled globally).
+            cc_load_policy: 0,
             start: CLIP.startTime,
             end: CLIP.endTime > 0 ? CLIP.endTime : undefined
           },
           events: {
             onReady: function () {
               ready = true;
+              applyVolume();
+              // Belt-and-braces: turn subtitles off once the module loads.
+              if (player.unloadModule) { player.unloadModule('captions'); player.unloadModule('cc'); }
               playPause.disabled = false;
               replay.disabled = false;
             },
             onStateChange: function (e) {
               if (e.data === YT.PlayerState.PLAYING) {
                 playPause.innerHTML = ICON_PAUSE;
+                hidePoster();
+                bigPlay.classList.add('hidden');
                 watchEnd();
               } else {
                 playPause.innerHTML = ICON_PLAY;
                 clearEndTimer();
-                if (e.data === YT.PlayerState.ENDED) { ended = true; }
+                if (e.data === YT.PlayerState.ENDED) { ended = true; showEndPoster(); }
               }
             },
             onError: function () {
@@ -362,15 +398,21 @@ ${warningGate}    <div class="video-screen${playerHidden}" id="playerCard">
           }
         });
       }
+      // The poster and overlay stay up until the player actually reports
+      // PLAYING (handled in onStateChange), so YouTube's own thumbnail or end
+      // screen never peeks through while the clip buffers.
       bigPlay.addEventListener('click', function () {
-        bigPlay.classList.add('hidden');
         if (ready) { startClip(); }
       });
       playPause.addEventListener('click', function () {
         if (!ready) { return; }
         var state = player.getPlayerState();
-        if (state === YT.PlayerState.PLAYING) { player.pauseVideo(); }
-        else if (ended) { startClip(); }
+        if (state === YT.PlayerState.PLAYING) { player.pauseVideo(); return; }
+        // Resume only when the position is inside the clip window; after the
+        // end (or any drift outside the bounds) play restarts the clip.
+        var t = player.getCurrentTime ? player.getCurrentTime() : CLIP.startTime;
+        var outside = t < CLIP.startTime || (CLIP.endTime > 0 && t >= CLIP.endTime);
+        if (ended || outside) { startClip(); }
         else { player.playVideo(); }
       });
       replay.addEventListener('click', function () {

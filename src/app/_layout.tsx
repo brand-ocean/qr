@@ -1,11 +1,13 @@
 import 'global.css';
 import { VStack } from '@nkzw/stack';
+import { ConvexProvider } from 'convex/react';
 import { useFonts } from 'expo-font';
 import { Slot, SplashScreen } from 'expo-router';
 import { lockAsync, OrientationLock } from 'expo-screen-orientation';
 import { useEffect } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { SettingsProvider } from 'src/context/SettingsContext.tsx';
+import { convex } from 'src/convex/client.ts';
 
 // Keep splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -39,11 +41,13 @@ export default function RootLayout() {
 
   return (
     <GestureHandlerRootView>
-      <SettingsProvider>
-        <VStack className="flex-1 basis-full">
-          <Slot />
-        </VStack>
-      </SettingsProvider>
+      <ConvexProvider client={convex}>
+        <SettingsProvider>
+          <VStack className="flex-1 basis-full">
+            <Slot />
+          </VStack>
+        </SettingsProvider>
+      </ConvexProvider>
     </GestureHandlerRootView>
   );
 }

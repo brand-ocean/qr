@@ -1,7 +1,7 @@
-import type { Doc } from '@convex/_generated/dataModel';
+import { SquareKanban } from 'lucide-react';
 import type React from 'react';
 import { useState } from 'react';
-import { useAdmin } from '../lib/adminContext';
+import { useAdmin, type CardDoc } from '../lib/adminContext';
 import { youtubeWatchUrl } from '../lib/youtube';
 import {
   DashboardIcon,
@@ -28,7 +28,7 @@ import {
 // always-present navigation actions.
 export function AppContextMenu({ children }: { children: React.ReactNode }) {
   const { cardActionsRef, setView, dark, toggleDark } = useAdmin();
-  const [card, setCard] = useState<Doc<'cards'> | null>(null);
+  const [card, setCard] = useState<CardDoc | null>(null);
 
   function onContextMenu(e: React.MouseEvent) {
     const el = (e.target as HTMLElement).closest<HTMLElement>('[data-card-id]');
@@ -80,6 +80,9 @@ export function AppContextMenu({ children }: { children: React.ReactNode }) {
         </ContextMenuItem>
         <ContextMenuItem onClick={() => setView('cards')}>
           <GridIcon className="size-4" /> Kaarten
+        </ContextMenuItem>
+        <ContextMenuItem onClick={() => setView('roadmap')}>
+          <SquareKanban className="size-4" /> Roadmap
         </ContextMenuItem>
         <ContextMenuItem onClick={toggleDark}>
           {dark ? (

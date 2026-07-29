@@ -28,6 +28,7 @@ const YoutubeIframe = _YoutubeIframe as unknown as ComponentType<{
     modestbranding?: boolean;
     preventFullScreen: boolean;
     rel: boolean;
+    showClosedCaptions?: boolean;
     start: number;
   };
   onChangeState: (state: string) => void;
@@ -36,6 +37,7 @@ const YoutubeIframe = _YoutubeIframe as unknown as ComponentType<{
   play: boolean;
   ref: React.Ref<YoutubeIframeRef>;
   videoId: string;
+  volume?: number;
   webViewProps: {
     allowsLinkPreview?: boolean;
     androidLayerType?: 'none' | 'software' | 'hardware';
@@ -59,6 +61,7 @@ export type YouTubePlayerHandle = {
 
 type YouTubePlayerProps = {
   readonly endTime: number;
+  readonly onEnded?: () => void;
   readonly onPlayStateChange?: (playing: boolean) => void;
   readonly onReadyChange?: (ready: boolean) => void;
   readonly onReplay?: () => void;
@@ -66,10 +69,13 @@ type YouTubePlayerProps = {
   readonly ref?: React.Ref<YouTubePlayerHandle>;
   readonly startTime: number;
   readonly videoId: string;
+  // Playback volume 0–100. Defaults to full volume when omitted.
+  readonly volume?: number;
 };
 
 export default function YouTubePlayerComponent({
   endTime,
+  onEnded,
   onPlayStateChange,
   onReadyChange,
   onReplay,
@@ -77,6 +83,7 @@ export default function YouTubePlayerComponent({
   ref,
   startTime,
   videoId,
+  volume = 100,
 }: YouTubePlayerProps) {
   const [playing, setPlaying] = useState(false);
   const [isReady, setIsReady] = useState(false);
@@ -115,25 +122,30 @@ export default function YouTubePlayerComponent({
       playerRef.current
         ?.getCurrentTime()
         .then((currentTime) => {
-          if (currentTime >= endTime) {
+          if (currentTime >= endTime && !endedRef.current) {
             endedRef.current = true;
             setPlaying(false);
             onPlayStateChange?.(false);
+            onEnded?.();
           }
         })
         .catch(() => {
           // WebView may not be ready yet; the next tick retries.
         });
-    }, 250);
+    }, 100);
     return () => clearInterval(interval);
-  }, [playing, endTime, onPlayStateChange]);
+  }, [playing, endTime, onPlayStateChange, onEnded]);
 
   const handleStateChange = useCallback(
     (state: string) => {
       if (state === 'ended') {
+        const alreadyEnded = endedRef.current;
         endedRef.current = true;
         setPlaying(false);
         onPlayStateChange?.(false);
+        if (!alreadyEnded) {
+          onEnded?.();
+        }
         return;
       }
 
@@ -148,7 +160,7 @@ export default function YouTubePlayerComponent({
         onPlayStateChange?.(true);
       }
     },
-    [onPlayStateChange],
+    [onPlayStateChange, onEnded],
   );
 
   const handleReady = useCallback(() => {
@@ -179,18 +191,23 @@ export default function YouTubePlayerComponent({
     playClickSound();
     const newState = !playing;
     if (newState && playerRef.current) {
-      if (endedRef.current) {
-        // After the clip ended, play restarts from the beginning.
+      const currentTime = await playerRef.current
+        .getCurrentTime()
+        .catch(() => startTime);
+      const outsideClip =
+        currentTime < startTime || (endTime > 0 && currentTime >= endTime);
+      if (endedRef.current || outsideClip) {
+        // After the clip ended — or whenever the position sits outside the
+        // configured clip window — play restarts from the beginning.
         endedRef.current = false;
         await playerRef.current.seekTo(startTime, true);
       } else {
-        const currentTime = await playerRef.current.getCurrentTime();
         await playerRef.current.seekTo(currentTime, true);
       }
     }
     setPlaying(newState);
     onPlayStateChange?.(newState);
-  }, [playing, startTime, onPlayStateChange]);
+  }, [playing, startTime, endTime, onPlayStateChange]);
 
   useImperativeHandle(
     ref,
@@ -254,6 +271,8 @@ export default function YouTubePlayerComponent({
               modestbranding: true,
               preventFullScreen: false,
               rel: false,
+              // Keep YouTube subtitles off by default.
+              showClosedCaptions: false,
               start: startTime,
             }}
             key={`${videoId}-${startTime}-${endTime}`}
@@ -263,6 +282,7 @@ export default function YouTubePlayerComponent({
             play={playing}
             ref={playerRef}
             videoId={videoId}
+            volume={volume}
             webViewProps={{
               allowsLinkPreview: false,
               androidLayerType:

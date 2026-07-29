@@ -11,6 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Path, Svg } from 'react-native-svg';
 import { useSettings } from 'src/context/SettingsContext.tsx';
+import { useCardThumbnail, useCardVolume } from 'src/convex/client.ts';
 import { getVideoById, type VideoCard } from 'src/data/videos.ts';
 import SunburstBackground from 'src/ui/SunburstBackground.tsx';
 import Text from 'src/ui/Text.tsx';
@@ -49,6 +50,59 @@ export default function VideoScreen() {
     }
     return `Video "${normalizedId}" niet gevonden`;
   }, [normalizedId, video]);
+
+  // Live custom thumbnail from Convex (admin-set); undefined while loading,
+  // null when none. Playback never depends on it — it only skins the poster.
+  const liveThumbnail = useCardThumbnail(normalizedId);
+
+  // Live per-card volume from Convex (0–100); 100 when unset/loading/offline.
+  const volume = useCardVolume(normalizedId);
+
+  // Poster shown over the player until the video first starts. Custom thumbnail
+  // wins; otherwise a low-res YouTube still (mqdefault, 320×180, always exists).
+  const posterSrc = useMemo(() => {
+    if (!video || video.videoId === 'ERROR') {
+      return null;
+    }
+    if (liveThumbnail) {
+      return liveThumbnail;
+    }
+    return `https://i.ytimg.com/vi/${video.videoId}/mqdefault.jpg`;
+  }, [video, liveThumbnail]);
+
+  const [hasStarted, setHasStarted] = useState(false);
+  const [posterCard, setPosterCard] = useState(normalizedId);
+
+  // Reset the poster when the card changes (render-time reset — no effect).
+  if (posterCard !== normalizedId) {
+    setPosterCard(normalizedId);
+    setHasStarted(false);
+  }
+
+  // Keep the poster hidden once playback has begun, even on later pauses.
+  // Covers both the poster tap and the bottom play button.
+  const handlePlayStateChange = (playing: boolean) => {
+    setIsVideoPlaying(playing);
+    if (playing) {
+      setHasStarted(true);
+    }
+  };
+
+  // When the clip finishes, bring the (custom) poster back so the YouTube
+  // end screen / original thumbnail never shows. Tapping it replays the clip.
+  const handleEnded = () => {
+    setHasStarted(false);
+  };
+
+  // The poster stays up until the player actually reports "playing"
+  // (handlePlayStateChange hides it), so YouTube's own thumbnail or end
+  // screen never peeks through while the clip buffers.
+  const startFromPoster = () => {
+    if (!isPlayerReady) {
+      return;
+    }
+    playerRef.current?.togglePlay();
+  };
 
   const goBack = () => {
     router.replace('/');
@@ -161,13 +215,36 @@ export default function VideoScreen() {
               <View style={styles.videoFrame}>
                 <YouTubePlayer
                   endTime={video.endTime}
-                  onPlayStateChange={setIsVideoPlaying}
+                  onEnded={handleEnded}
+                  onPlayStateChange={handlePlayStateChange}
                   onReadyChange={setIsPlayerReady}
                   onVideoError={setVideoError}
                   ref={playerRef}
                   startTime={video.startTime}
                   videoId={video.videoId}
+                  volume={volume}
                 />
+                {posterSrc && !hasStarted ? (
+                  <Pressable
+                    disabled={!isPlayerReady}
+                    onPress={startFromPoster}
+                    style={styles.poster}
+                  >
+                    <Image
+                      resizeMode="cover"
+                      source={{ uri: posterSrc }}
+                      style={StyleSheet.absoluteFill}
+                    />
+                    <View
+                      style={[
+                        styles.posterPlay,
+                        !isPlayerReady && styles.iconButtonDisabled,
+                      ]}
+                    >
+                      <Ionicons color="black" name="play" size={34} />
+                    </View>
+                  </Pressable>
+                ) : null}
               </View>
             )}
           </View>
@@ -364,6 +441,27 @@ const styles = StyleSheet.create({
   playRow: {
     flexDirection: 'row',
     gap: 8,
+  },
+  poster: {
+    ...StyleSheet.absoluteFillObject,
+    alignItems: 'center',
+    backgroundColor: 'black',
+    justifyContent: 'center',
+  },
+  posterPlay: {
+    alignItems: 'center',
+    backgroundColor: '#FFD700',
+    borderColor: 'black',
+    borderRadius: 20,
+    borderWidth: 4,
+    elevation: 6,
+    height: 68,
+    justifyContent: 'center',
+    shadowColor: 'black',
+    shadowOffset: { height: 4, width: 4 },
+    shadowOpacity: 1,
+    shadowRadius: 0,
+    width: 68,
   },
   safeArea: {
     flex: 1,

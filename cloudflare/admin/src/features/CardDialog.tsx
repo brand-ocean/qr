@@ -1,28 +1,37 @@
 import { api } from '@convex/_generated/api';
-import type { Doc } from '@convex/_generated/dataModel';
+import type { Id } from '@convex/_generated/dataModel';
 import { useMutation } from 'convex/react';
 import type React from 'react';
-import { useState, type FormEvent } from 'react';
+import { useRef, useState, type FormEvent } from 'react';
 import { toast } from 'sonner';
-import { CancelIcon, VideoIcon } from '../components/icons';
+import { CancelIcon, ImageIcon, VideoIcon } from '../components/icons';
 import { Button } from '../components/ui/button';
 import { ConfirmDialog } from '../components/ui/confirm-dialog';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { formatClip, parseYouTubeId } from '../lib/youtube';
+import type { CardDoc } from '../lib/adminContext';
+import { cx } from '../lib/utils';
+import { formatClip, parseYouTubeId, youtubeThumb } from '../lib/youtube';
 import { VideoTimePicker } from './VideoTimePicker';
 
 type Props = {
   mode: 'create' | 'edit';
-  card?: Doc<'cards'>;
+  card?: CardDoc;
   onClose: () => void;
 };
 
 const YT_ID = /^[A-Za-z0-9_-]{11}$/;
 
+// A still frame from the video itself: YouTube auto-generates hq1/hq2/hq3 at
+// roughly 25/50/75% of the video (480×360).
+function youtubeFrame(videoId: string, n: 1 | 2 | 3): string {
+  return `https://i.ytimg.com/vi/${videoId}/hq${n}.jpg`;
+}
+
 export function CardDialog({ mode, card, onClose }: Props) {
   const createCard = useMutation(api.cards.create);
   const updateCard = useMutation(api.cards.update);
+  const generateUploadUrl = useMutation(api.cards.generateThumbnailUploadUrl);
 
   const [cardId, setCardId] = useState(card?.cardId ?? '');
   const [quote, setQuote] = useState(card?.quote ?? '');
@@ -38,12 +47,92 @@ export function CardDialog({ mode, card, onClose }: Props) {
   );
   const [startTime, setStartTime] = useState(card?.startTime ?? 0);
   const [endTime, setEndTime] = useState(card?.endTime ?? 0);
+  // Per-card playback volume (0–100). Unset on the card means full volume.
+  const [volume, setVolume] = useState(card?.volume ?? 100);
+  // Thumbnail override: an uploaded image (thumbnailId) wins over a chosen
+  // frame / URL (thumbnailUrl); both unset = default YouTube thumbnail.
+  const [thumbnailId, setThumbnailId] = useState<Id<'_storage'> | undefined>(
+    card?.thumbnailId,
+  );
+  const [thumbnailUrl, setThumbnailUrl] = useState<string | undefined>(
+    card?.thumbnailUrl,
+  );
+  // Local object URL for a just-uploaded image, shown before the card is saved.
+  const [localPreview, setLocalPreview] = useState<string | null>(null);
+  const [uploading, setUploading] = useState(false);
+  // Frame URLs that 404 for this video (e.g. maxres missing) are hidden.
+  const [failedFrames, setFailedFrames] = useState<Set<string>>(new Set());
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
   const trimmedVideo = videoId.trim();
   const showPicker = YT_ID.test(trimmedVideo);
+
+  // What to render in the thumbnail preview, in priority order.
+  const previewSrc =
+    localPreview ??
+    (thumbnailId !== undefined ? (card?.thumbnail ?? null) : null) ??
+    thumbnailUrl ??
+    (showPicker ? youtubeThumb(trimmedVideo) : null);
+
+  const usingDefault = thumbnailId === undefined && thumbnailUrl === undefined;
+
+  // Candidate stills YouTube serves for this video, besides the default cover.
+  // Any that fail to load (commonly maxres) are dropped from the picker.
+  const frameCandidates = showPicker
+    ? [
+        {
+          key: 'hd',
+          label: 'HD',
+          url: `https://i.ytimg.com/vi/${trimmedVideo}/maxresdefault.jpg`,
+        },
+        {
+          key: 'sd',
+          label: 'SD',
+          url: `https://i.ytimg.com/vi/${trimmedVideo}/sddefault.jpg`,
+        },
+        { key: 'f1', label: '25%', url: youtubeFrame(trimmedVideo, 1) },
+        { key: 'f2', label: '50%', url: youtubeFrame(trimmedVideo, 2) },
+        { key: 'f3', label: '75%', url: youtubeFrame(trimmedVideo, 3) },
+      ].filter((c) => !failedFrames.has(c.url))
+    : [];
+
+  function chooseFrame(url: string) {
+    setThumbnailId(undefined);
+    setThumbnailUrl(url);
+    setLocalPreview(null);
+  }
+  function resetThumbnail() {
+    setThumbnailId(undefined);
+    setThumbnailUrl(undefined);
+    setLocalPreview(null);
+  }
+
+  async function onUpload(file: File) {
+    setError(null);
+    setUploading(true);
+    try {
+      const uploadUrl = await generateUploadUrl({});
+      const res = await fetch(uploadUrl, {
+        method: 'POST',
+        headers: { 'Content-Type': file.type },
+        body: file,
+      });
+      if (!res.ok) throw new Error('Upload mislukt.');
+      const { storageId } = (await res.json()) as {
+        storageId: Id<'_storage'>;
+      };
+      setThumbnailId(storageId);
+      setThumbnailUrl(undefined);
+      setLocalPreview(URL.createObjectURL(file));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'Upload mislukt.');
+    } finally {
+      setUploading(false);
+    }
+  }
 
   async function performSave() {
     setError(null);
@@ -55,6 +144,10 @@ export function CardDialog({ mode, card, onClose }: Props) {
       endTime,
       year: Number(year),
       contentWarning,
+      // Store nothing when at full volume, so the card stays on the default.
+      volume: volume >= 100 ? undefined : volume,
+      thumbnailId,
+      thumbnailUrl,
       allowlistReason: allowlistReason.trim() || undefined,
     };
     try {
@@ -206,6 +299,113 @@ export function CardDialog({ mode, card, onClose }: Props) {
             <p className="text-xs text-gray-500 dark:text-gray-400">
               Huidige clip: <strong>{formatClip(startTime, endTime)}</strong>
             </p>
+
+            <div className="mt-1 flex flex-col gap-1.5">
+              <div className="flex items-center justify-between">
+                <Label>Volume</Label>
+                <span className="text-xs font-medium text-gray-500 tabular-nums dark:text-gray-400">
+                  {volume}%{volume >= 100 ? ' (standaard)' : ''}
+                </span>
+              </div>
+              <input
+                type="range"
+                min={0}
+                max={100}
+                step={5}
+                value={volume}
+                onChange={(e) => setVolume(Number(e.target.value))}
+                className="accent-accent-500 w-full"
+                aria-label="Volume"
+              />
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                Zet lager voor kaarten die te hard klinken. 100% = standaard
+                YouTube-volume.
+              </p>
+            </div>
+          </div>
+
+          {/* Thumbnail override: default YouTube, a frame from the video, or an
+              uploaded image. */}
+          <div className="flex flex-col gap-2 md:col-span-2">
+            <Label>Thumbnail</Label>
+            <div className="flex flex-wrap items-start gap-3">
+              <div className="aspect-video w-40 shrink-0 overflow-hidden rounded-md border border-gray-200 bg-gray-100 dark:border-gray-800 dark:bg-gray-800">
+                {previewSrc ? (
+                  <img
+                    src={previewSrc}
+                    alt=""
+                    className="h-full w-full object-cover"
+                  />
+                ) : (
+                  <div className="flex h-full items-center justify-center text-gray-400">
+                    <ImageIcon className="size-6" />
+                  </div>
+                )}
+              </div>
+              <div className="flex min-w-52 flex-1 flex-col gap-2">
+                <div className="flex flex-wrap gap-1.5">
+                  <ThumbChoice
+                    label="Standaard"
+                    active={usingDefault}
+                    disabled={!showPicker}
+                    onClick={resetThumbnail}
+                    imgSrc={showPicker ? youtubeThumb(trimmedVideo) : undefined}
+                  />
+                  {frameCandidates.map((c) => (
+                    <ThumbChoice
+                      key={c.key}
+                      label={c.label}
+                      active={thumbnailUrl === c.url}
+                      onClick={() => chooseFrame(c.url)}
+                      imgSrc={c.url}
+                      onError={() =>
+                        setFailedFrames((prev) => {
+                          const next = new Set(prev);
+                          next.add(c.url);
+                          return next;
+                        })
+                      }
+                    />
+                  ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-2">
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) void onUpload(file);
+                      e.target.value = '';
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    isLoading={uploading}
+                    onClick={() => fileInputRef.current?.click()}
+                  >
+                    <ImageIcon className="size-4" /> Afbeelding uploaden
+                  </Button>
+                  {!usingDefault ? (
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={resetThumbnail}
+                    >
+                      Standaard herstellen
+                    </Button>
+                  ) : null}
+                </div>
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Laat leeg voor de standaard YouTube-thumbnail, kies een frame
+                  uit de video zelf, of upload een eigen afbeelding.
+                </p>
+              </div>
+            </div>
           </div>
 
           {error ? (
@@ -249,5 +449,50 @@ function Field({
       <Label>{label}</Label>
       {children}
     </div>
+  );
+}
+
+// A small thumbnail source swatch (default / video frame) with its own preview.
+function ThumbChoice({
+  label,
+  active,
+  disabled,
+  onClick,
+  imgSrc,
+  onError,
+}: {
+  label: string;
+  active: boolean;
+  disabled?: boolean;
+  onClick: () => void;
+  imgSrc?: string;
+  onError?: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      disabled={disabled}
+      onClick={onClick}
+      title={label}
+      className={cx(
+        'relative h-11 w-16 shrink-0 overflow-hidden rounded border bg-gray-100 transition dark:bg-gray-800',
+        active
+          ? 'border-accent-500 ring-accent-500/40 ring-2'
+          : 'border-gray-200 hover:border-gray-400 dark:border-gray-700',
+        disabled && 'cursor-not-allowed opacity-40',
+      )}
+    >
+      {imgSrc ? (
+        <img
+          src={imgSrc}
+          alt=""
+          className="h-full w-full object-cover"
+          onError={onError}
+        />
+      ) : null}
+      <span className="absolute inset-x-0 bottom-0 bg-black/50 py-0.5 text-center text-[9px] font-medium text-white">
+        {label}
+      </span>
+    </button>
   );
 }
