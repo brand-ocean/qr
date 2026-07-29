@@ -11,7 +11,12 @@ import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
 import type { CardDoc } from '../lib/adminContext';
 import { cx } from '../lib/utils';
-import { formatClip, parseYouTubeId, youtubeThumb } from '../lib/youtube';
+import {
+  formatClip,
+  parseYouTubeId,
+  youtubeThumb,
+  youtubeWatchUrl,
+} from '../lib/youtube';
 import { VideoTimePicker } from './VideoTimePicker';
 
 type Props = {
@@ -67,15 +72,19 @@ export function CardDialog({ mode, card, onClose }: Props) {
   const [submitting, setSubmitting] = useState(false);
   const [confirmOpen, setConfirmOpen] = useState(false);
 
+  // The field keeps whatever the admin types (a full URL stays a full URL);
+  // the canonical 11-char id is derived from it for the preview, the picker,
+  // the thumbnails and what actually gets saved.
   const trimmedVideo = videoId.trim();
-  const showPicker = YT_ID.test(trimmedVideo);
+  const resolvedVideoId = parseYouTubeId(videoId) ?? trimmedVideo;
+  const showPicker = YT_ID.test(resolvedVideoId);
 
   // What to render in the thumbnail preview, in priority order.
   const previewSrc =
     localPreview ??
     (thumbnailId !== undefined ? (card?.thumbnail ?? null) : null) ??
     thumbnailUrl ??
-    (showPicker ? youtubeThumb(trimmedVideo) : null);
+    (showPicker ? youtubeThumb(resolvedVideoId) : null);
 
   const usingDefault = thumbnailId === undefined && thumbnailUrl === undefined;
 
@@ -86,16 +95,16 @@ export function CardDialog({ mode, card, onClose }: Props) {
         {
           key: 'hd',
           label: 'HD',
-          url: `https://i.ytimg.com/vi/${trimmedVideo}/maxresdefault.jpg`,
+          url: `https://i.ytimg.com/vi/${resolvedVideoId}/maxresdefault.jpg`,
         },
         {
           key: 'sd',
           label: 'SD',
-          url: `https://i.ytimg.com/vi/${trimmedVideo}/sddefault.jpg`,
+          url: `https://i.ytimg.com/vi/${resolvedVideoId}/sddefault.jpg`,
         },
-        { key: 'f1', label: '25%', url: youtubeFrame(trimmedVideo, 1) },
-        { key: 'f2', label: '50%', url: youtubeFrame(trimmedVideo, 2) },
-        { key: 'f3', label: '75%', url: youtubeFrame(trimmedVideo, 3) },
+        { key: 'f1', label: '25%', url: youtubeFrame(resolvedVideoId, 1) },
+        { key: 'f2', label: '50%', url: youtubeFrame(resolvedVideoId, 2) },
+        { key: 'f3', label: '75%', url: youtubeFrame(resolvedVideoId, 3) },
       ].filter((c) => !failedFrames.has(c.url))
     : [];
 
@@ -139,7 +148,7 @@ export function CardDialog({ mode, card, onClose }: Props) {
     setSubmitting(true);
     const shared = {
       quote: quote.trim(),
-      videoId: trimmedVideo,
+      videoId: resolvedVideoId,
       startTime,
       endTime,
       year: Number(year),
@@ -227,19 +236,36 @@ export function CardDialog({ mode, card, onClose }: Props) {
                 required
               />
             </Field>
-            <Field label="YouTube video-id of volledige URL">
+            <Field label="YouTube-URL of video-id">
               <Input
                 value={videoId}
-                onChange={(e) => {
-                  // Accept a bare id or any YouTube URL; snap to the id when
-                  // one can be extracted (e.g. after pasting a full link).
-                  const raw = e.target.value;
-                  setVideoId(parseYouTubeId(raw) ?? raw);
-                }}
-                placeholder="dQw4w9WgXcQ of https://youtu.be/…"
+                onChange={(e) => setVideoId(e.target.value)}
+                placeholder="https://youtu.be/… of dQw4w9WgXcQ"
                 className="font-mono"
                 required
               />
+              {showPicker ? (
+                <p className="text-xs text-gray-500 dark:text-gray-400">
+                  Video-id:{' '}
+                  <span className="font-mono text-gray-700 dark:text-gray-300">
+                    {resolvedVideoId}
+                  </span>{' '}
+                  ·{' '}
+                  <a
+                    href={youtubeWatchUrl(resolvedVideoId, startTime)}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="text-accent-600 dark:text-accent-400 underline"
+                  >
+                    Openen op YouTube ↗
+                  </a>
+                </p>
+              ) : trimmedVideo ? (
+                <p className="text-xs text-amber-600 dark:text-amber-400">
+                  Geen geldig YouTube-id gevonden. Plak de volledige URL of de
+                  11-tekens video-id.
+                </p>
+              ) : null}
             </Field>
             <Field label="Jaar">
               <Input
@@ -277,8 +303,8 @@ export function CardDialog({ mode, card, onClose }: Props) {
             <Label>Clip instellen</Label>
             {showPicker ? (
               <VideoTimePicker
-                key={trimmedVideo}
-                videoId={trimmedVideo}
+                key={resolvedVideoId}
+                videoId={resolvedVideoId}
                 startTime={startTime}
                 endTime={endTime}
                 onChange={({ startTime: s, endTime: e }) => {
@@ -290,7 +316,7 @@ export function CardDialog({ mode, card, onClose }: Props) {
               <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-gray-200 text-center text-sm text-gray-400 dark:border-gray-700">
                 <VideoIcon className="size-7" />
                 <span>
-                  Vul een geldig YouTube video-id in
+                  Plak een YouTube-URL of video-id
                   <br />
                   om de clip interactief in te stellen.
                 </span>
@@ -349,7 +375,9 @@ export function CardDialog({ mode, card, onClose }: Props) {
                     active={usingDefault}
                     disabled={!showPicker}
                     onClick={resetThumbnail}
-                    imgSrc={showPicker ? youtubeThumb(trimmedVideo) : undefined}
+                    imgSrc={
+                      showPicker ? youtubeThumb(resolvedVideoId) : undefined
+                    }
                   />
                   {frameCandidates.map((c) => (
                     <ThumbChoice
