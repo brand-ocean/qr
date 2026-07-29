@@ -137,6 +137,8 @@ const ASSET_LINKS = [
       sha256_cert_fingerprints: [
         '13:4C:1D:B6:23:8A:0F:CD:8F:62:85:E4:79:BD:C6:43:5C:33:7C:77:0B:82:CE:9E:25:A1:36:2B:AC:E2:80:F9',
         'FA:C6:17:45:DC:09:03:78:6F:B9:ED:E6:2A:96:2B:39:9F:73:48:F0:BB:6F:89:9B:83:32:66:75:91:03:3B:9C',
+        // Play App Signing key (Play Console > App-integriteit > App-ondertekening)
+        '76:67:D9:B1:36:E1:6B:15:90:12:EB:DC:42:D9:07:80:15:40:B1:41:6A:34:B5:A6:45:C1:96:FC:46:F4:20:37',
       ],
     },
   },
