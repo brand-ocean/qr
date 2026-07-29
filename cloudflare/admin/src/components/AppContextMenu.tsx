@@ -10,6 +10,7 @@ import {
   ExternalIcon,
   GridIcon,
   MoonIcon,
+  PlayIcon,
   ReloadIcon,
   SunIcon,
 } from './icons';
@@ -53,6 +54,11 @@ export function AppContextMenu({ children }: { children: React.ReactNode }) {
             <ContextMenuLabel>{card.cardId}</ContextMenuLabel>
             <ContextMenuItem onClick={() => actions.edit(card)}>
               <EditIcon className="size-4" /> Bewerken
+            </ContextMenuItem>
+            <ContextMenuItem
+              onClick={() => window.open(`/${card.cardId}`, '_blank')}
+            >
+              <PlayIcon className="size-4" /> Kaartpagina testen
             </ContextMenuItem>
             <ContextMenuItem
               disabled={card.videoId === 'ERROR'}
