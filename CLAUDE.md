@@ -130,6 +130,52 @@ adb shell am start -a android.intent.action.VIEW -c android.intent.category.BROW
   - `app.json` (`ios.associatedDomains`, `android.intentFilters`)
   - `docs/cloudflare-universal-links.md`
 
+### Android Release Configuration
+
+Config plugins in `plugins/` (CommonJS `.cjs`, because the repo is `"type": "module"`):
+
+- `withAndroidGameCompat.cjs`
+  - Sets `android:appCategory="game"` and the
+    `PROPERTY_COMPAT_ALLOW_RESTRICTED_RESIZABILITY` property.
+  - Purpose: from targetSdk 36, Android ignores `android:screenOrientation` on
+    screens `>=600dp`. Games are exempt, but only when they declare
+    `appCategory`. This is what keeps the landscape lock working on tablets.
+  - The opt-out property stops working at targetSdk 37. At that point
+    `index.tsx` and `video/[id].tsx` need real portrait layouts; both currently
+    assume width > height (`flexDirection: 'row'`, `logoWidth = height * 0.75`,
+    fixed `width: 185` button rail).
+- `withoutDevClientInReleaseBuilds.cjs`
+  - Adds `expoAutolinking.exclude` to `android/settings.gradle`.
+  - Purpose: Android autolinking has no debug/release distinction (`debugOnly`
+    is Apple-only), so `expo-dev-launcher` otherwise ships in the production
+    AAB along with Compose, Koin, Apollo, MLKit and
+    `play-services-code-scanner`.
+  - Active when `EAS_BUILD_PROFILE` is set and is not `development`, or when
+    `EXPO_EXCLUDE_DEV_CLIENT=1`. Local prebuild keeps the dev client.
+
+R8 is enabled through `expo-build-properties` in `app.json`
+(`enableMinifyInReleaseBuilds`, `enableShrinkResourcesInReleaseBuilds`).
+Keep rules for VisionCamera, Worklets, SVG, WebView and Expo modules live in
+the same plugin config and are appended to `android/app/proguard-rules.pro`.
+
+Verify a release configuration without building:
+
+```bash
+EAS_BUILD_PROFILE=production npx expo prebuild --platform android --clean
+grep -n "exclude" android/settings.gradle
+grep -n "appCategory\|PROPERTY_COMPAT" android/app/src/main/AndroidManifest.xml
+npx expo prebuild --platform android --clean   # restore dev state afterwards
+```
+
+R8 and the dev-client exclusion only fail at runtime, so a preview build must
+be smoke-tested before submitting to Play:
+
+```bash
+eas build -p android --profile preview
+```
+
+Check scanner, video playback, the rules modal and a deep link on that APK.
+
 ### YouTube Availability Gate
 
 - Script: `scripts/check-youtube-availability.mjs`

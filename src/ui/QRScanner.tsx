@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react';
 import { StyleSheet, View } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   Camera,
   useCameraDevice,
@@ -12,6 +13,9 @@ import { parseCardIdFromScannedValue } from 'src/lib/parseCardId.ts';
 import Text from './Text.tsx';
 import ViralButton from './ViralButton.tsx';
 
+/** Marge tussen de SLUITEN-knop en de rand van het veilige gebied. */
+const CONTROL_MARGIN = 20;
+
 type QRScannerProps = {
   readonly onClose: () => void;
   readonly onVideoFound: (videoId: string) => void;
@@ -21,6 +25,16 @@ export default function QRScanner({ onClose, onVideoFound }: QRScannerProps) {
   const device = useCameraDevice('back');
   const { hasPermission, requestPermission } = useCameraPermission();
   const isProcessing = useRef(false);
+  // Edge-to-edge staat sinds SDK 54 aan: het camerabeeld mag onder de
+  // systeembalken door lopen, de bediening niet. In landscape zit de
+  // navigatiebalk of de cutout aan de zijkant, dus links en rechts tellen mee.
+  const insets = useSafeAreaInsets();
+  const safeAreaPadding = {
+    paddingBottom: insets.bottom,
+    paddingLeft: insets.left,
+    paddingRight: insets.right,
+    paddingTop: insets.top,
+  };
 
   const handleCodeScanned = useCallback(
     (codes: Array<Code>) => {
@@ -58,7 +72,7 @@ export default function QRScanner({ onClose, onVideoFound }: QRScannerProps) {
 
   if (!hasPermission) {
     return (
-      <View style={styles.permissionContainer}>
+      <View style={[styles.permissionContainer, safeAreaPadding]}>
         <Text style={styles.permissionText}>
           Camera toegang nodig om QR codes te scannen
         </Text>
@@ -76,7 +90,7 @@ export default function QRScanner({ onClose, onVideoFound }: QRScannerProps) {
 
   if (!device) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={[styles.errorContainer, safeAreaPadding]}>
         <Text style={styles.errorText}>Geen camera gevonden</Text>
         <ViralButton onPress={onClose} title="TERUG" variant="outline" />
       </View>
@@ -91,13 +105,22 @@ export default function QRScanner({ onClose, onVideoFound }: QRScannerProps) {
         isActive={true}
         style={StyleSheet.absoluteFill}
       />
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, safeAreaPadding]}>
         <View style={styles.scanArea} />
         <Text style={styles.instructionText}>
           Richt de camera op een QR code
         </Text>
       </View>
-      <View style={styles.closeButton}>
+      <View
+        style={[
+          styles.closeButton,
+          {
+            bottom: insets.bottom + CONTROL_MARGIN,
+            left: insets.left + CONTROL_MARGIN,
+            right: insets.right + CONTROL_MARGIN,
+          },
+        ]}
+      >
         <ViralButton onPress={onClose} title="SLUITEN" variant="secondary" />
       </View>
     </View>
@@ -111,10 +134,7 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   closeButton: {
-    bottom: 60,
-    left: 20,
     position: 'absolute',
-    right: 20,
   },
   container: {
     backgroundColor: 'black',

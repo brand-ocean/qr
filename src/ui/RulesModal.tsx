@@ -1,5 +1,6 @@
 import { Modal, Pressable, StyleSheet, Switch, View } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useSettings } from '../context/SettingsContext.tsx';
 import { playClickSound } from '../lib/sound.ts';
 import Text from './Text.tsx';
@@ -11,6 +12,13 @@ type RulesModalProps = {
 
 export default function RulesModal({ onClose, visible }: RulesModalProps) {
   const { setShowContentWarning, showContentWarning } = useSettings();
+  const insets = useSafeAreaInsets();
+  const safeAreaPadding = {
+    paddingBottom: insets.bottom,
+    paddingLeft: insets.left,
+    paddingRight: insets.right,
+    paddingTop: insets.top,
+  };
 
   const handleClose = () => {
     playClickSound();
@@ -20,12 +28,17 @@ export default function RulesModal({ onClose, visible }: RulesModalProps) {
   return (
     <Modal
       animationType="fade"
+      // Zonder deze twee tekent het modal-venster niet achter de systeembalken
+      // terwijl de rest van de app dat onder edge-to-edge wel doet; dat geeft
+      // een zichtbare naad. navigationBarTranslucent vereist statusBarTranslucent.
+      navigationBarTranslucent
       onRequestClose={handleClose}
+      statusBarTranslucent
       supportedOrientations={['landscape', 'landscape-left', 'landscape-right']}
       transparent
       visible={visible}
     >
-      <View style={styles.overlay}>
+      <View style={[styles.overlay, safeAreaPadding]}>
         <View style={styles.modal}>
           <View style={styles.header}>
             <Text style={styles.title}>INFORMATIE</Text>

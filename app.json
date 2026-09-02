@@ -45,7 +45,19 @@
       ],
       "expo-asset",
       "expo-audio",
-      "expo-video"
+      "expo-video",
+      [
+        "expo-build-properties",
+        {
+          "android": {
+            "enableMinifyInReleaseBuilds": true,
+            "enableShrinkResourcesInReleaseBuilds": true,
+            "extraProguardRules": "-keep,allowoptimization class com.mrousavy.camera.** { *; }\n-keep,allowoptimization class com.swmansion.worklets.** { *; }\n-keep class com.horcrux.svg.** { *; }\n-keep class com.reactnativecommunity.webview.** { *; }\n-keep class expo.modules.** { *; }\n-keepclassmembers class * { @expo.modules.core.interfaces.ExpoProp *; }\n-dontwarn com.google.errorprone.annotations.**\n-dontwarn javax.annotation.**"
+          }
+        }
+      ],
+      "./plugins/withAndroidGameCompat.cjs",
+      "./plugins/withoutDevClientInReleaseBuilds.cjs"
     ],
     "experiments": {
       "reactCanary": true,

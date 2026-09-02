@@ -19,7 +19,7 @@ export default [
     },
   },
   {
-    files: ['metro.config.cjs'],
+    files: ['metro.config.cjs', 'plugins/*.cjs'],
     rules: {
       '@typescript-eslint/no-require-imports': 0,
     },
