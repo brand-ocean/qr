@@ -1,25 +1,37 @@
 import { ConvexHttpClient } from 'convex/browser';
 import { makeFunctionReference } from 'convex/server';
-import { VIDEOS, type VideoCard } from '../../src/data/videos.ts';
-
-// Bundled dataset — used as a fallback when Convex is unreachable.
-const VIDEO_BY_ID = new Map<string, VideoCard>(
-  VIDEOS.map((video) => [video.id, video]),
-);
 
 // The subset of a card the player page needs. `thumbnail` is the admin-set
-// custom poster (Convex-resolved); absent in the bundled fallback dataset.
-type PlayableCard = Pick<
-  VideoCard,
-  'videoId' | 'startTime' | 'endTime' | 'contentWarning'
-> & { thumbnail?: string | null; volume?: number };
+// custom poster (Convex-resolved).
+type PlayableCard = {
+  videoId: string;
+  startTime: number;
+  endTime: number;
+  contentWarning: boolean;
+  thumbnail?: string | null;
+  volume?: number;
+};
 
-// Convex is the source of truth for card data; the worker reads it live.
+// Convex is the single source of truth for card data; the worker reads it
+// live. There is no bundled dataset: when Convex cannot be reached the player
+// shows a "probeer het zo opnieuw" notice instead of stale data.
 const getForPlayerRef = makeFunctionReference<
   'query',
   { cardId: string },
   PlayableCard | null
 >('cards:getForPlayer');
+
+// Minimal card projection used by the manual availability check.
+type CheckCard = {
+  cardId: string;
+  videoId: string;
+  allowlistReason?: string;
+};
+
+// `cards:list` returns full docs; only these fields are read here.
+const listCardsRef = makeFunctionReference<'query', {}, CheckCard[]>(
+  'cards:list',
+);
 
 // Fire-and-forget scan counter (drives the admin dashboard). Never blocks or
 // affects the player page.
@@ -40,41 +52,34 @@ function getConvexClient(url: string): ConvexHttpClient {
 const CARD_TTL_MS = 60_000;
 const cardCache = new Map<string, { card: PlayableCard | null; ts: number }>();
 
-// Resolves a card by id. Convex is authoritative (a null result means the card
-// was deleted and we 404, matching the live admin). Only a Convex *error* falls
-// back to the bundled dataset.
+// Resolves a card by id. Convex is authoritative: a null result means the card
+// does not exist (404, matching the live admin). A Convex error is surfaced as
+// 'unavailable' so the caller can render a temporary-outage notice; a stale
+// cached value is preferred over that when one exists.
 async function resolveCard(
   env: Env,
   cardId: string,
-): Promise<PlayableCard | null> {
+): Promise<PlayableCard | null | 'unavailable'> {
   const now = Date.now();
   const cached = cardCache.get(cardId);
   if (cached && now - cached.ts < CARD_TTL_MS) {
     return cached.card;
   }
-  if (env.CONVEX_URL) {
-    try {
-      const card = await getConvexClient(env.CONVEX_URL).query(
-        getForPlayerRef,
-        {
-          cardId,
-        },
-      );
-      cardCache.set(cardId, { card, ts: now });
-      return card;
-    } catch {
-      // Convex down — fall through to the bundled snapshot.
-    }
+  try {
+    const card = await getConvexClient(env.CONVEX_URL).query(getForPlayerRef, {
+      cardId,
+    });
+    cardCache.set(cardId, { card, ts: now });
+    return card;
+  } catch {
+    // Convex unreachable: serve the last known value if we have one.
+    return cached ? cached.card : 'unavailable';
   }
-  return VIDEO_BY_ID.get(cardId) ?? null;
 }
 
 // Non-blocking: record that a card was opened on the web player. Swallows all
 // errors so analytics never impact the player.
 async function logScan(env: Env, cardId: string): Promise<void> {
-  if (!env.CONVEX_URL) {
-    return;
-  }
   try {
     await getConvexClient(env.CONVEX_URL).mutation(logScanRef, { cardId });
   } catch {
@@ -109,9 +114,9 @@ interface Env {
   REPORT_EMAIL_TO: string;
   MAILER_TOKEN?: string;
   TRIGGER_KEY?: string;
-  // Convex deployment URL (e.g. https://acme-123.convex.cloud). When unset the
-  // worker serves cards purely from the bundled dataset.
-  CONVEX_URL?: string;
+  // Convex deployment URL (e.g. https://acme-123.convex.cloud). Required:
+  // all card data is read live from Convex.
+  CONVEX_URL: string;
   // Static assets binding (serves the built admin SPA under /admin).
   ASSETS: Fetcher;
 }
@@ -744,7 +749,6 @@ async function handleVideosReport(
   });
 }
 
-const GITHUB_RAW_BASE = 'https://raw.githubusercontent.com/brand-ocean/qr/main';
 const CHECK_CONCURRENCY = 20;
 
 interface CardVideo {
@@ -755,16 +759,6 @@ interface CardVideo {
 interface CardCheckFailure extends CardVideo {
   allowlistReason?: string;
   status: number;
-}
-
-function parseVideoCards(source: string): CardVideo[] {
-  const cards: CardVideo[] = [];
-  for (const match of source.matchAll(
-    /id: '(kaart\d{4})',[\s\S]*?videoId: '((?:[^'\\]|\\.)*)'/g,
-  )) {
-    cards.push({ cardId: match[1], videoId: match[2] });
-  }
-  return cards;
 }
 
 function oembedUrl(videoId: string): string {
@@ -812,36 +806,33 @@ async function handleManualVideosCheck(
     return new Response('Unauthorized', { status: 401 });
   }
 
-  const [videosResponse, allowlistResponse] = await Promise.all([
-    fetch(`${GITHUB_RAW_BASE}/src/data/videos.ts`),
-    fetch(`${GITHUB_RAW_BASE}/config/videos-check-allowlist.json`),
-  ]);
-  if (!videosResponse.ok || !allowlistResponse.ok) {
-    return new Response('Kon de kaartdata niet ophalen van GitHub.', {
+  // Cards come live from Convex, including the per-card allowlist reason the
+  // admin can set. Retired cards (videoId 'ERROR') are intentionally dead and
+  // are reported as allowlisted, never as broken.
+  let cards: CheckCard[];
+  try {
+    cards = (await getConvexClient(env.CONVEX_URL).query(listCardsRef, {})).map(
+      (card) => ({
+        allowlistReason: card.allowlistReason,
+        cardId: card.cardId,
+        videoId: card.videoId,
+      }),
+    );
+  } catch {
+    return new Response('Kon de kaartdata niet ophalen uit Convex.', {
       status: 502,
     });
   }
-
-  const cards = parseVideoCards(await videosResponse.text());
-  const allowlist = (await allowlistResponse.json()) as {
-    entries?: ReadonlyArray<{
-      cardId: string;
-      reason?: string;
-      videoId: string;
-    }>;
-  };
-  const allowlistByKey = new Map(
-    (allowlist.entries ?? []).map((entry) => [
-      `${entry.cardId}|${entry.videoId}`,
-      entry.reason ?? 'allowlisted',
-    ]),
-  );
 
   const statuses: number[] = Array.from({ length: cards.length }, () => 0);
   let nextIndex = 0;
   const lane = async (): Promise<void> => {
     while (nextIndex < cards.length) {
       const index = nextIndex++;
+      if (cards[index].videoId === 'ERROR') {
+        statuses[index] = 0;
+        continue;
+      }
       try {
         statuses[index] = (await fetch(oembedUrl(cards[index].videoId))).status;
       } catch {
@@ -849,20 +840,28 @@ async function handleManualVideosCheck(
       }
     }
   };
-  await Promise.all(Array.from({ length: CHECK_CONCURRENCY }, lane));
+  await Promise.all(
+    Array.from({ length: Math.min(CHECK_CONCURRENCY, cards.length) }, lane),
+  );
 
   const broken: CardCheckFailure[] = [];
   const allowlisted: CardCheckFailure[] = [];
   for (const [index, card] of cards.entries()) {
     const status = statuses[index];
     if (status === 200) continue;
-    const allowlistReason = allowlistByKey.get(
-      `${card.cardId}|${card.videoId}`,
-    );
+    const allowlistReason =
+      card.videoId === 'ERROR'
+        ? 'Foutkaart (bewust zonder video)'
+        : card.allowlistReason;
     if (allowlistReason === undefined) {
-      broken.push({ ...card, status });
+      broken.push({ cardId: card.cardId, status, videoId: card.videoId });
     } else {
-      allowlisted.push({ ...card, allowlistReason, status });
+      allowlisted.push({
+        allowlistReason,
+        cardId: card.cardId,
+        status,
+        videoId: card.videoId,
+      });
     }
   }
 
@@ -1022,7 +1021,15 @@ export default {
       const cardId = match[1].toLowerCase();
       const card = await resolveCard(env, cardId);
       let html: string;
-      if (!card) {
+      let status = 200;
+      if (card === 'unavailable') {
+        status = 503;
+        html = noticePageHtml(
+          'Even geen verbinding',
+          'De kaartgegevens konden niet worden geladen. Probeer het over een paar seconden opnieuw.',
+        );
+      } else if (!card) {
+        status = 404;
         html = noticePageHtml(
           'Kaart niet gevonden',
           `Kaart "${cardId}" bestaat niet. Controleer de QR-code of het kaartnummer.`,
@@ -1042,6 +1049,7 @@ export default {
           'Cache-Control': 'no-store',
           'Content-Type': 'text/html; charset=utf-8',
         },
+        status,
       });
     }
 

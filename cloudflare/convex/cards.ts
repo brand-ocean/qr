@@ -59,7 +59,7 @@ export type CardWithThumbnail = Doc<'cards'> & { thumbnail: string | null };
 
 // All cards, sorted by card id, each enriched with a resolved override
 // `thumbnail` (null when the card uses the default YouTube thumbnail). Used by
-// the admin table, the videos.ts export script, and as a bulk source for the
+// the admin table, the availability checks (worker + GitHub Action), and as a bulk source for the
 // worker.
 export const list = query({
   args: {},

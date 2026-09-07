@@ -5,13 +5,12 @@
   "description": "Virals Game web worker + admin (Convex)",
   "type": "module",
   "scripts": {
-    "admin:build": "npm run seed:build && vite build --config admin/vite.config.ts",
+    "admin:build": "vite build --config admin/vite.config.ts",
     "admin:dev": "vite --config admin/vite.config.ts",
     "convex:deploy": "convex deploy",
     "convex:dev": "convex dev",
     "deploy": "npm run admin:build && wrangler deploy",
     "dev": "wrangler dev",
-    "seed:build": "node scripts/build-convex-seed.mjs",
     "typecheck": "tsc -p admin/tsconfig.json --noEmit"
   },
   "dependencies": {

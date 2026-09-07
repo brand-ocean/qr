@@ -9,11 +9,12 @@ app.
 - **Frontend:** Vite + React SPA (`cloudflare/admin/`), forz visual style
   (Tremor shadcn, blue accent, dark mode, Aeonik Pro). Builds to
   `public/admin/`, served by the worker at `viralsgame.nl/admin`.
-- **Live data:** the worker reads each card from Convex on request (60s
-  per-isolate cache) and falls back to the bundled `src/data/videos.ts` only if
-  Convex is unreachable. Admin edits are therefore live on the web player.
-- **Native app:** still bundles `src/data/videos.ts`. Regenerate it from Convex
-  before an app release (see below).
+- **Live data:** Convex is the single source of truth. The worker reads each
+  card from Convex on request (60s per-isolate cache); if Convex is unreachable
+  it serves a "even geen verbinding" notice (503), never stale data.
+- **Native app:** also reads every card live from Convex (`src/convex/client.ts`,
+  query `cards:getForPlayer`). There is no bundled dataset, so admin edits reach
+  iOS, Android and web immediately without an app release.
 
 ## One-time setup
 
@@ -34,7 +35,6 @@ npx convex env set ADMIN_EMAILS "you@example.com,teammate@example.com"
 #    email not in ADMIN_EMAILS).
 
 # 3. Seed the 267 existing cards into Convex (idempotent; no-op if not empty).
-npm run seed:build        # regenerate convex/seedData.ts from videos.ts
 npx convex run seed:run
 
 # 4. Point the admin SPA and worker at the deployment.
@@ -59,18 +59,6 @@ npm run deploy            # builds the SPA (public/admin/) + wrangler deploy
 Make sure `CONVEX_URL` in `wrangler.json` points at the **production** Convex
 deployment before `npm run deploy`.
 
-## Regenerate the app's videos.ts from Convex
-
-Run before a native app release so the app picks up admin changes:
-
-```bash
-CONVEX_URL=https://<deployment>.convex.cloud node scripts/generate-videos-from-convex.mjs
-# then from the repo root: pnpm format && pnpm videos:check
-```
-
-The admin's **"videos.ts"** button downloads the same file if you prefer a
-manual drop-in.
-
 ## What works / what doesn't
 
 Each card shows an availability badge (Werkt / Kapot / Genegeerd / ERROR /
@@ -83,6 +71,6 @@ Mark a known-broken video as deliberately ignored by giving it an
 **allowlist-reden** in the edit dialog; it then reports as _Genegeerd_ instead
 of _Kapot_.
 
-> Note: the pre-existing GitHub Action (`videos-check.yml`) + email report still
-> run against the bundled `videos.ts` on GitHub. Once Convex is the source of
-> truth you can retire that workflow, or keep it as an independent cross-check.
+The GitHub Action (`videos-check.yml`, `pnpm videos:check`) and the worker's
+manual check (`/check/<key>`) read the same live Convex data, so all three
+checks agree. The allowlist-reden on a card is the only allowlist.

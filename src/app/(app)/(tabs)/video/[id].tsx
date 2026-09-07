@@ -11,8 +11,7 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Path, Svg } from 'react-native-svg';
 import { useSettings } from 'src/context/SettingsContext.tsx';
-import { useCardThumbnail, useCardVolume } from 'src/convex/client.ts';
-import { getVideoById, type VideoCard } from 'src/data/videos.ts';
+import { useCard, useIsConvexOffline } from 'src/convex/client.ts';
 import SunburstBackground from 'src/ui/SunburstBackground.tsx';
 import Text from 'src/ui/Text.tsx';
 import ViralButton from 'src/ui/ViralButton.tsx';
@@ -37,26 +36,23 @@ export default function VideoScreen() {
     return id?.toLowerCase() ?? '';
   }, [id]);
 
-  const video = useMemo<VideoCard | null>(() => {
-    if (!normalizedId) {
-      return null;
-    }
-    return getVideoById(normalizedId);
-  }, [normalizedId]);
+  // The card comes live from Convex: undefined while loading, null when the
+  // card does not exist. There is no bundled fallback dataset.
+  const video = useCard(normalizedId);
+  const isOffline = useIsConvexOffline();
 
   const error = useMemo(() => {
-    if (!normalizedId || video) {
-      return null;
+    if (!normalizedId) {
+      return 'Geen kaartnummer';
     }
-    return `Video "${normalizedId}" niet gevonden`;
+    if (video === null) {
+      return `Kaart "${normalizedId}" niet gevonden`;
+    }
+    return null;
   }, [normalizedId, video]);
 
-  // Live custom thumbnail from Convex (admin-set); undefined while loading,
-  // null when none. Playback never depends on it — it only skins the poster.
-  const liveThumbnail = useCardThumbnail(normalizedId);
-
-  // Live per-card volume from Convex (0–100); 100 when unset/loading/offline.
-  const volume = useCardVolume(normalizedId);
+  const liveThumbnail = video?.thumbnail ?? null;
+  const volume = video?.volume ?? 100;
 
   // Poster shown over the player until the video first starts. Custom thumbnail
   // wins; otherwise a low-res YouTube still (mqdefault, 320×180, always exists).
@@ -129,12 +125,27 @@ export default function VideoScreen() {
   }
 
   if (!video) {
+    // Still loading. Without a connection the query never resolves, so show
+    // a clear "no connection" notice instead of an endless spinner.
     return (
       <View style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
-          <View style={styles.loadingCard}>
-            <Text style={styles.loadingText}>Laden...</Text>
-          </View>
+          {isOffline ? (
+            <View style={styles.errorCard}>
+              <Text style={styles.errorText}>Geen verbinding</Text>
+              <Text style={styles.errorHint}>
+                Controleer je internetverbinding. De kaart wordt automatisch
+                geladen zodra er weer verbinding is.
+              </Text>
+              <View style={styles.buttonGroup}>
+                <ViralButton onPress={goBack} title="TERUG" variant="outline" />
+              </View>
+            </View>
+          ) : (
+            <View style={styles.loadingCard}>
+              <Text style={styles.loadingText}>Laden...</Text>
+            </View>
+          )}
         </SafeAreaView>
       </View>
     );
@@ -271,7 +282,7 @@ export default function VideoScreen() {
             </View>
             <View style={styles.buttonCard}>
               <ViralButton
-                onPress={() => router.push('/(app)/(tabs)/scanner' as Href)}
+                onPress={() => router.replace('/(app)/(tabs)/scanner' as Href)}
                 style={styles.compactButton}
                 title="SCAN KAART"
                 variant="primary"
@@ -359,6 +370,14 @@ const styles = StyleSheet.create({
     gap: 24,
     justifyContent: 'center',
     padding: 20,
+  },
+  errorHint: {
+    color: 'black',
+    fontFamily: 'AeonikFono-Bold',
+    fontSize: 14,
+    lineHeight: 20,
+    maxWidth: 340,
+    textAlign: 'center',
   },
   errorText: {
     color: 'black',

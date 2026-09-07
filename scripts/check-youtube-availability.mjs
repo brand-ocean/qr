@@ -1,13 +1,17 @@
 #!/usr/bin/env node
+// Checks every card's YouTube video (via oEmbed) against the live Convex
+// dataset. Convex is the single source of truth: there is no bundled
+// videos.ts and no separate allowlist file. A card is "allowlisted" when the
+// admin set an allowlist reason on it, or when it is a retired card
+// (videoId 'ERROR').
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import process from 'node:process';
+import { ConvexHttpClient } from 'convex/browser';
+import { makeFunctionReference } from 'convex/server';
 
-const DEFAULT_VIDEOS_PATH = path.join(process.cwd(), 'src/data/videos.ts');
-const DEFAULT_ALLOWLIST_PATH = path.join(
-  process.cwd(),
-  'config/videos-check-allowlist.json',
-);
+// Prod deployment; override with CONVEX_URL or --convex-url=.
+const DEFAULT_CONVEX_URL = 'https://tacit-crab-381.eu-west-1.convex.cloud';
 const DEFAULT_CONCURRENCY = 8;
 const MAX_RETRIES = 2;
 const REQUEST_TIMEOUT_MS = 10_000;
@@ -29,20 +33,15 @@ function sleep(ms) {
 
 function parseArgs(args) {
   const options = {
-    allowlistPath: DEFAULT_ALLOWLIST_PATH,
     concurrency: DEFAULT_CONCURRENCY,
+    convexUrl: process.env.CONVEX_URL || DEFAULT_CONVEX_URL,
     reportJsonPath: null,
     reportMarkdownPath: null,
-    videosPath: DEFAULT_VIDEOS_PATH,
   };
 
   for (const arg of args) {
-    if (arg.startsWith('--videos=')) {
-      options.videosPath = path.resolve(arg.slice('--videos='.length));
-      continue;
-    }
-    if (arg.startsWith('--allowlist=')) {
-      options.allowlistPath = path.resolve(arg.slice('--allowlist='.length));
+    if (arg.startsWith('--convex-url=')) {
+      options.convexUrl = arg.slice('--convex-url='.length);
       continue;
     }
     if (arg.startsWith('--concurrency=')) {
@@ -67,98 +66,47 @@ function parseArgs(args) {
     }
 
     throw new Error(
-      `Unknown argument "${arg}". Supported: --videos=, --allowlist=, --concurrency=, --report-json=, --report-md=`,
+      `Unknown argument "${arg}". Supported: --convex-url=, --concurrency=, --report-json=, --report-md=`,
     );
   }
 
   return options;
 }
 
-function extractVideoCards(videosFileContent) {
-  const videosArrayMatch = videosFileContent.match(
-    /export const VIDEOS:\s*ReadonlyArray<VideoCard>\s*=\s*\[([\S\s]*?)]\s*as const;/,
-  );
-  if (!videosArrayMatch) {
-    throw new Error('Could not find `VIDEOS` array in videos.ts');
-  }
+const listCards = makeFunctionReference('cards:list');
 
-  const videosArrayBody = videosArrayMatch[1];
-  const objectMatches = [...videosArrayBody.matchAll(/{([\S\s]*?)},/g)];
+// Loads all cards from Convex. Returns { cards, allowlistByKey } where
+// allowlistByKey maps "cardId|videoId" to the admin's allowlist reason.
+async function loadCardsFromConvex(convexUrl) {
+  const client = new ConvexHttpClient(convexUrl);
+  const docs = await client.query(listCards, {});
 
-  const cards = objectMatches
-    .map((match) => {
-      const objectBody = match[1];
-      const cardId = objectBody.match(/id:\s*'([^']+)'/)?.[1]?.toLowerCase();
-      const videoId = objectBody.match(/videoId:\s*'([^']+)'/)?.[1];
+  const cards = docs
+    .map((doc) => ({
+      allowlistReason:
+        typeof doc.allowlistReason === 'string' &&
+        doc.allowlistReason.length > 0
+          ? doc.allowlistReason
+          : doc.videoId === 'ERROR'
+            ? 'Foutkaart (bewust zonder video)'
+            : null,
+      cardId: String(doc.cardId).toLowerCase(),
+      videoId: String(doc.videoId),
+    }))
+    .sort((a, b) => a.cardId.localeCompare(b.cardId));
 
-      if (!cardId || !videoId) {
-        return null;
-      }
-
-      return { cardId, videoId };
-    })
-    .filter((card) => card !== null);
-
-  cards.sort((a, b) => a.cardId.localeCompare(b.cardId));
-
-  return cards;
-}
-
-function parseAllowlist(content) {
-  const parsed = JSON.parse(content);
-
-  if (!parsed || typeof parsed !== 'object') {
-    throw new Error('Allowlist file must contain a JSON object.');
-  }
-  if (!Array.isArray(parsed.entries)) {
-    throw new Error('Allowlist file must include an `entries` array.');
-  }
-
-  const entries = parsed.entries.map((entry, index) => {
-    if (!entry || typeof entry !== 'object') {
-      throw new Error(`Allowlist entry at index ${index} must be an object.`);
+  const allowlistByKey = new Map();
+  for (const card of cards) {
+    if (card.allowlistReason !== null) {
+      allowlistByKey.set(createCheckKey(card.cardId, card.videoId), {
+        cardId: card.cardId,
+        reason: card.allowlistReason,
+        videoId: card.videoId,
+      });
     }
-
-    const cardId =
-      typeof entry.cardId === 'string' ? entry.cardId.toLowerCase() : '';
-    const videoId = typeof entry.videoId === 'string' ? entry.videoId : '';
-
-    if (!cardId || !videoId) {
-      throw new Error(
-        `Allowlist entry at index ${index} must include non-empty "cardId" and "videoId".`,
-      );
-    }
-
-    return {
-      addedOn:
-        typeof entry.addedOn === 'string' && entry.addedOn.length > 0
-          ? entry.addedOn
-          : null,
-      cardId,
-      expiresOn:
-        typeof entry.expiresOn === 'string' && entry.expiresOn.length > 0
-          ? entry.expiresOn
-          : null,
-      reason:
-        typeof entry.reason === 'string' && entry.reason.length > 0
-          ? entry.reason
-          : 'No reason provided',
-      videoId,
-    };
-  });
-
-  const entriesByKey = new Map();
-  for (const entry of entries) {
-    const key = `${entry.cardId}|${entry.videoId}`;
-    if (entriesByKey.has(key)) {
-      throw new Error(
-        `Duplicate allowlist entry for cardId "${entry.cardId}" + videoId "${entry.videoId}".`,
-      );
-    }
-    entriesByKey.set(key, entry);
   }
 
-  return entriesByKey;
+  return { allowlistByKey, cards };
 }
 
 function createOEmbedUrl(videoId) {
@@ -172,6 +120,19 @@ function createBackoffDelay(attempt) {
 }
 
 async function checkVideoAvailability(card) {
+  // Retired cards have no video by design; report them as a non-200 result
+  // so they land in the allowlisted bucket without hitting YouTube.
+  if (card.videoId === 'ERROR') {
+    return {
+      attempts: 0,
+      cardId: card.cardId,
+      message: 'Foutkaart (videoId ERROR)',
+      ok: false,
+      status: 0,
+      videoId: card.videoId,
+    };
+  }
+
   const oEmbedUrl = createOEmbedUrl(card.videoId);
 
   for (let attempt = 0; attempt <= MAX_RETRIES; attempt += 1) {
@@ -299,8 +260,7 @@ function createMarkdownReport(report) {
     '# YouTube Availability Report',
     '',
     `Generated at: ${report.generatedAt}`,
-    `Videos file: ${report.videosFile}`,
-    `Allowlist file: ${report.allowlistFile}`,
+    `Source: ${report.convexUrl}`,
     `Concurrency: ${report.concurrency}`,
     '',
     '## Summary',
@@ -405,8 +365,7 @@ async function writeOptionalFile(filePath, content) {
 
 function printConsoleReport(report) {
   writeLine('YouTube availability check (oEmbed)');
-  writeLine(`Videos file : ${report.videosFile}`);
-  writeLine(`Allowlist   : ${report.allowlistFile}`);
+  writeLine(`Source      : ${report.convexUrl}`);
   writeLine(`Concurrency : ${report.concurrency}`);
   writeLine('');
 
@@ -428,7 +387,7 @@ function printConsoleReport(report) {
   }
 
   if (report.staleAllowlistEntries.length > 0) {
-    writeLine('Stale allowlist entries (not found in videos.ts)');
+    writeLine('Stale allowlist entries');
     for (const item of report.staleAllowlistEntries) {
       writeLine(`- ${item.cardId} (${item.videoId})`);
     }
@@ -448,11 +407,10 @@ function printConsoleReport(report) {
 
 function createReport({
   allowlistByKey,
-  allowlistPath,
   cards,
   checkResults,
   concurrency,
-  videosPath,
+  convexUrl,
 }) {
   const passed = [];
   const allowlistedFailures = [];
@@ -504,9 +462,9 @@ function createReport({
 
   return {
     allowlistedFailures,
-    allowlistFile: allowlistPath,
     blockingFailures,
     concurrency,
+    convexUrl,
     generatedAt: new Date().toISOString(),
     staleAllowlistEntries,
     summary: {
@@ -516,22 +474,19 @@ function createReport({
       staleAllowlistEntries: staleAllowlistEntries.length,
       totalChecked: cards.length,
     },
-    videosFile: videosPath,
   };
 }
 
 async function main() {
   const options = parseArgs(process.argv.slice(2));
 
-  const videosFileContent = await fs.readFile(options.videosPath, 'utf8');
-  const cards = extractVideoCards(videosFileContent);
+  const { allowlistByKey, cards } = await loadCardsFromConvex(
+    options.convexUrl,
+  );
 
   if (cards.length === 0) {
-    throw new Error('No cards found in videos.ts');
+    throw new Error(`No cards found in Convex (${options.convexUrl})`);
   }
-
-  const allowlistContent = await fs.readFile(options.allowlistPath, 'utf8');
-  const allowlistByKey = parseAllowlist(allowlistContent);
 
   const checkResults = await runWithConcurrency(
     cards,
@@ -541,11 +496,10 @@ async function main() {
 
   const report = createReport({
     allowlistByKey,
-    allowlistPath: options.allowlistPath,
     cards,
     checkResults,
     concurrency: options.concurrency,
-    videosPath: options.videosPath,
+    convexUrl: options.convexUrl,
   });
 
   const markdownReport = createMarkdownReport(report);

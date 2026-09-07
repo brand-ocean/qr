@@ -1,20 +1,24 @@
-import { ConvexReactClient, useQuery } from 'convex/react';
+import {
+  ConvexReactClient,
+  useConvexConnectionState,
+  useQuery,
+} from 'convex/react';
 import { makeFunctionReference } from 'convex/server';
 
-// The game ships with a baked-in dataset (src/data/videos.ts) and works fully
-// offline. Convex is used only for one live, optional bit of data: a custom
-// thumbnail an admin can set per card. If Convex is unreachable, playback still
-// works — the poster just falls back to a low-res YouTube still.
+// Convex is the single source of truth for card data. The app has no bundled
+// dataset: every card (video id, clip times, quote, volume, thumbnail) is read
+// live from the prod deployment, so admin changes in the dashboard reach the
+// app immediately without a new release.
 //
-// Points at the prod deployment (tacit-crab-381), matching the admin's
-// cloudflare/admin/.env.production.
+// Points at the prod deployment (tacit-crab-381), matching the worker's
+// cloudflare/wrangler.json and the admin's cloudflare/admin/.env.production.
 const CONVEX_URL = 'https://tacit-crab-381.eu-west-1.convex.cloud';
 
 export const convex = new ConvexReactClient(CONVEX_URL);
 
 // Mirror of the `cards.getForPlayer` return shape (see cloudflare/convex/cards.ts).
 // Referenced by string so the game doesn't need the backend's generated `api`.
-type PlayerCard = {
+export type PlayerCard = {
   cardId: string;
   contentWarning: boolean;
   endTime: number;
@@ -32,22 +36,15 @@ const getForPlayer = makeFunctionReference<
   PlayerCard | null
 >('cards:getForPlayer');
 
-// Live-subscribes to a single card's custom thumbnail.
-// Returns `undefined` while loading, `null` if no card / no custom thumbnail,
-// or the thumbnail URL. `cardId` may be empty to skip the query.
-export function useCardThumbnail(cardId: string): string | null | undefined {
-  const card = useQuery(getForPlayer, cardId ? { cardId } : 'skip');
-  if (card === undefined) {
-    return undefined;
-  }
-  return card?.thumbnail ?? null;
+// Live-subscribes to a single card. Returns `undefined` while loading, `null`
+// when the card does not exist, or the card. `cardId` may be empty to skip.
+export function useCard(cardId: string): PlayerCard | null | undefined {
+  return useQuery(getForPlayer, cardId ? { cardId } : 'skip');
 }
 
-// Live-subscribes to a single card's playback volume (0–100). Falls back to
-// 100 (full volume) while loading, when the card is missing, or when Convex is
-// unreachable — so playback volume never depends on the network. Convex
-// dedupes this with useCardThumbnail: both share one `getForPlayer` query.
-export function useCardVolume(cardId: string): number {
-  const card = useQuery(getForPlayer, cardId ? { cardId } : 'skip');
-  return card?.volume ?? 100;
+// True while the client has no WebSocket to Convex. Used to tell "still
+// loading" apart from "no connection" so the player can show a retry screen.
+export function useIsConvexOffline(): boolean {
+  const state = useConvexConnectionState();
+  return !state.isWebSocketConnected;
 }

@@ -83,7 +83,7 @@ jobs:
             if [ "$stale" != "0" ]; then
               body="$body
 
-          Let op: $stale verouderde allowlist-regel(s) in config/videos-check-allowlist.json."
+          Let op: $stale verouderde allowlist-regel(s)."
             fi
             body="$body
 

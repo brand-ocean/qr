@@ -8,7 +8,6 @@ import {
   useCodeScanner,
   type Code,
 } from 'react-native-vision-camera';
-import { getVideoById } from 'src/data/videos.ts';
 import { parseCardIdFromScannedValue } from 'src/lib/parseCardId.ts';
 import Text from './Text.tsx';
 import ViralButton from './ViralButton.tsx';
@@ -52,15 +51,14 @@ export default function QRScanner({ onClose, onVideoFound }: QRScannerProps) {
         return;
       }
 
-      const video = getVideoById(videoId);
-      if (video) {
-        isProcessing.current = true;
-        onVideoFound(videoId);
-        // Reset after navigation
-        setTimeout(() => {
-          isProcessing.current = false;
-        }, 1000);
-      }
+      // The card id has the right shape; whether the card exists is decided
+      // live by Convex on the video screen (which shows "niet gevonden").
+      isProcessing.current = true;
+      onVideoFound(videoId);
+      // Reset after navigation
+      setTimeout(() => {
+        isProcessing.current = false;
+      }, 1000);
     },
     [onVideoFound],
   );

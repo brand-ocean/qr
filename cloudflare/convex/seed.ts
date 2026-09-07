@@ -1,7 +1,7 @@
 import { mutation } from './_generated/server';
 import { SEED_CARDS } from './seedData';
 
-// One-time import of the current videos.ts dataset into Convex. Safe to run
+// One-time bootstrap of a fresh deployment from the seedData snapshot. Safe to run
 // repeatedly: it refuses to insert once the table already has cards.
 //   npx convex run seed:run
 export const run = mutation({
