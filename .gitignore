@@ -31,3 +31,7 @@ google-play-service-account.json
 
 # Wrangler local cache/state
 cloudflare/.wrangler/
+
+# Local agent config (contains local settings / API keys)
+.codex/
+.claude/settings.local.json

@@ -13,7 +13,7 @@ This runbook configures `https://viralsgame.nl/kaartXXXX` so QR scans open the a
 
 Replace these values before deploy:
 
-- `YOUR_TEAM_ID` (Apple Developer Team ID)
+- `M5MVTQV846` (Apple Developer Team ID)
 - `YOUR_SHA256_FINGERPRINT` (Android signing cert fingerprint)
 - `YOUR_APP_STORE_URL` (iOS store URL)
 - `YOUR_PLAY_STORE_URL` (Android store URL)
@@ -36,7 +36,7 @@ const AASA = {
     apps: [],
     details: [
       {
-        appID: 'YOUR_TEAM_ID.nl.viralsgame.app',
+        appID: 'M5MVTQV846.nl.viralsgame.app',
         paths: ['/kaart*'],
       },
     ],

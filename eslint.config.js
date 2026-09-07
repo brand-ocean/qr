@@ -7,6 +7,8 @@ export default [
       '__generated__',
       '.expo',
       'android/',
+      'cloudflare/.wrangler/',
+      'cloudflare/public/admin/',
       'dist/',
       'ios/',
       'vite.config.ts.timestamp-*',

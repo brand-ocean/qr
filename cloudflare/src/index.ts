@@ -126,7 +126,7 @@ const AASA = {
     apps: [],
     details: [
       {
-        appID: 'YOUR_TEAM_ID.nl.viralsgame.app',
+        appID: 'M5MVTQV846.nl.viralsgame.app',
         paths: ['/kaart*'],
       },
     ],
