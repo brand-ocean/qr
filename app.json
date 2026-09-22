@@ -28,7 +28,7 @@
       [
         "expo-av",
         {
-          "microphonePermission": "Allow $(PRODUCT_NAME) to access your microphone."
+          "microphonePermission": "Geef $(PRODUCT_NAME) toegang tot je microfoon."
         }
       ],
       [
@@ -86,10 +86,12 @@
         "applinks:www.viralsgame.nl"
       ],
       "infoPlist": {
+        "CFBundleDevelopmentRegion": "nl",
+        "CFBundleLocalizations": ["nl"],
         "ITSAppUsesNonExemptEncryption": false,
-        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to scan QR codes on game cards.",
+        "NSCameraUsageDescription": "Geef $(PRODUCT_NAME) toegang tot je camera om QR-codes op spelkaarten te scannen.",
         "NSLocationWhenInUseUsageDescription": "Deze app gebruikt geen locatiegegevens.",
-        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to record audio for video."
+        "NSMicrophoneUsageDescription": "Geef $(PRODUCT_NAME) toegang tot je microfoon."
       }
     },
     "android": {
